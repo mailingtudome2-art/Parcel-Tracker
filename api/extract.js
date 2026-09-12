@@ -1,452 +1,269 @@
-export default async function handler(req, res) {
+// Vercel Serverless Function
+// POST /api/extract
+// { image: "<base64>", mediaType: "image/jpeg" }
+// -> { items: [{ seq: 1, tracking: "WB368998512TH" }, ...] }
 
+const MODEL = 'openrouter/free';
+
+const EXTRACTION_PROMPT = `
+You are an OCR engine for Thai postal delivery manifests.
+
+The image contains a table of parcel tracking numbers.
+
+IMPORTANT:
+- Read EVERY visible numbered parcel entry.
+- There may be 50-100+ entries.
+- Do not stop early.
+- Ignore recipient names, addresses, status text, document numbers and all other text.
+- Only extract parcel tracking numbers from the numbered parcel table.
+- The tracking number format is exactly:
+  2 English letters + 9 digits + TH
+
+Examples:
+WB 3689 9851 2 TH -> WB368998512TH
+JG 0674 5041 2 TH -> JG067450412TH
+
+The printed sequence number must also be returned.
+
+Return ONLY one entry per line:
+sequence|tracking_number
+
+Example:
+1|WB368998512TH
+2|WB464939383TH
+3|JG067450412TH
+
+Do not use markdown.
+Do not add explanations.
+Do not add headers.
+Do not use code fences.
+
+If the tracking number is printed with spaces, remove the spaces.
+If it is unclear, use the visible characters and the fixed format to make your best reading.
+
+READ ALL ENTRIES IN THE TABLE.
+`;
+
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'Method Not Allowed'
-    });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({
-      error: 'ไม่พบ OPENROUTER_API_KEY ใน Vercel'
+    res.status(500).json({
+      error:
+        'Server is missing OPENROUTER_API_KEY. Add it in Vercel Project Settings > Environment Variables, then redeploy.'
     });
+    return;
+  }
+
+  let body = req.body;
+
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      body = {};
+    }
+  }
+
+  const { image, mediaType } = body || {};
+
+  if (!image || !mediaType) {
+    res.status(400).json({
+      error: 'Missing image or mediaType in request body'
+    });
+    return;
   }
 
   try {
-
-    const { image, mediaType } = req.body || {};
-
-    if (!image) {
-      return res.status(400).json({
-        error: 'ไม่พบรูปภาพ'
-      });
-    }
-
-    /*
-    =====================================================
-    ใช้โมเดลฟรีตัวใหม่โดยตรง
-    =====================================================
-    */
-
-    const MODEL =
-      'inclusionai/ling-3.0-flash-vl:free';
-
-
-    const imageDataUrl =
-      image.startsWith('data:')
-        ? image
-        : `data:${mediaType || 'image/jpeg'};base64,${image}`;
-
-
-    /*
-    =====================================================
-    PROMPT
-    =====================================================
-    */
-
-    const prompt = `
-อ่านข้อความเลขพัสดุจากภาพนี้
-
-ภาพนี้เป็นตารางใบนำจ่าย ป.303 ของไปรษณีย์ไทย
-
-เลขพัสดุมีรูปแบบ:
-
-AA 1234 5678 9 TH
-
-หรือ
-
-AA123456789TH
-
-โดย:
-- AA = ตัวอักษรภาษาอังกฤษ 2 ตัว
-- ตามด้วยตัวเลข 9 หลัก
-- ลงท้ายด้วย TH
-
-ตัวอย่าง:
-
-WB 3689 9851 2 TH
-JG 0674 5041 2 TH
-OB 4102 5193 1 TH
-
-ต้องตอบเป็น:
-
-WB368998512TH
-JG067450412TH
-OB410251931TH
-
-กติกาสำคัญมาก:
-
-- อ่านเฉพาะเลขที่เห็นจริงในภาพ
-- ห้ามเดา
-- ห้ามสร้างเลข
-- ห้ามแก้เลขที่อ่านไม่ชัดโดยการเดา
-- ถ้ามีหลายแถว ให้ตรวจทุกแถว
-- รวมช่องว่างระหว่างตัวอักษรและตัวเลข
-- ใช้ตัวพิมพ์ใหญ่
-- ตอบเฉพาะเลขพัสดุ
-- หนึ่งเลขต่อหนึ่งบรรทัด
-- ห้ามใส่คำอธิบาย
-- ห้ามใส่หมายเลขลำดับ
-- ห้ามใส่ Markdown
-
-ตัวอย่าง:
-
-WB368998512TH
-WB464939383TH
-WB462670430TH
-
-ถ้าอ่านเลขไม่ได้จริง ๆ ให้ตอบ:
-
-NONE
-`;
-
-
-    /*
-    =====================================================
-    OPENROUTER
-    =====================================================
-    */
-
     const response = await fetch(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         method: 'POST',
-
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-
-          'HTTP-Referer':
-            'https://parcel-tracker-mailing.vercel.app'
+          Authorization: `Bearer ${apiKey}`
         },
-
         body: JSON.stringify({
-
           model: MODEL,
 
           messages: [
             {
               role: 'user',
-
               content: [
-
                 {
                   type: 'text',
-                  text: prompt
+                  text: EXTRACTION_PROMPT
                 },
-
                 {
                   type: 'image_url',
-
                   image_url: {
-                    url: imageDataUrl
+                    url: `data:${mediaType};base64,${image}`
                   }
-
                 }
-
               ]
             }
           ],
 
           temperature: 0,
-
-          max_tokens: 800
-
+          max_tokens: 6000
         })
       }
     );
 
-
-    /*
-    =====================================================
-    อ่าน response
-    =====================================================
-    */
-
-    const data =
-      await response.json();
-
-
-    /*
-    =====================================================
-    ERROR
-    =====================================================
-    */
+    const rawResponse = await response.text();
 
     if (!response.ok) {
+      console.error('OpenRouter error:', rawResponse);
 
-      console.error(
-        'OPENROUTER ERROR:',
-        JSON.stringify(data, null, 2)
-      );
-
-      return res.status(response.status).json({
-
+      res.status(502).json({
         error:
           `OpenRouter API error (${response.status}): ` +
-          (
-            data?.error?.message ||
-            JSON.stringify(data)
-          )
-
+          rawResponse.slice(0, 500)
       });
-
+      return;
     }
 
+    let data;
 
-    /*
-    =====================================================
-    DEBUG
-    =====================================================
-    */
+    try {
+      data = JSON.parse(rawResponse);
+    } catch (e) {
+      console.error('Invalid OpenRouter JSON:', rawResponse);
 
-    console.log(
-      'MODEL USED:',
-      data?.model
-    );
+      res.status(502).json({
+        error: 'OpenRouter returned invalid JSON'
+      });
+      return;
+    }
 
-
-    console.log(
-      'FULL RESPONSE:',
-      JSON.stringify(data, null, 2)
-    );
-
-
-    /*
-    =====================================================
-    CONTENT
-    =====================================================
-    */
-
-    const rawContent =
-      data?.choices?.[0]?.message?.content;
-
+    const message = data?.choices?.[0]?.message;
 
     let text = '';
 
-
-    if (Array.isArray(rawContent)) {
-
-      text =
-        rawContent
-          .map(
-            part => part?.text || ''
-          )
-          .join('\n');
-
-    } else {
-
-      text =
-        String(
-          rawContent || ''
-        );
-
-    }
-
-
-    console.log(
-      'AI RAW TEXT:',
-      text
-    );
-
-
-    /*
-    =====================================================
-    CLEAN
-    =====================================================
-    */
-
-    const cleaned =
-      text
-        .toUpperCase()
-        .replace(/\r/g, '\n');
-
-
-    console.log(
-      'CLEANED:',
-      cleaned
-    );
-
-
-    /*
-    =====================================================
-    ดึงเลขแบบติดกัน
-    =====================================================
-    */
-
-    const matches = [];
-
-
-    const normalRegex =
-      /([A-Z]{2})[^A-Z0-9]*(\d{9})[^A-Z0-9]*TH/gi;
-
-
-    for (
-      const match of cleaned.matchAll(
-        normalRegex
-      )
-    ) {
-
-      const tracking =
-        `${match[1]}${match[2]}TH`
-          .toUpperCase();
-
-      matches.push(tracking);
-
-    }
-
-
-    /*
-    =====================================================
-    ดึงเลขแบบ:
-
-    WB 3689 9851 2 TH
-    =====================================================
-    */
-
-    const spacedRegex =
-      /([A-Z]{2})\s*(\d{4})\s*(\d{4})\s*(\d)\s*TH/gi;
-
-
-    for (
-      const match of cleaned.matchAll(
-        spacedRegex
-      )
-    ) {
-
-      const tracking =
-        `${match[1]}${match[2]}${match[3]}${match[4]}TH`
-          .toUpperCase();
-
-      matches.push(tracking);
-
-    }
-
-
-    /*
-    =====================================================
-    เผื่อ AI ใส่เลขติดกัน
-    =====================================================
-    */
-
-    const compact =
-      cleaned.replace(
-        /[^A-Z0-9]/g,
-        ''
-      );
-
-
-    const compactMatches =
-      compact.match(
-        /[A-Z]{2}\d{9}TH/g
-      ) || [];
-
-
-    matches.push(
-      ...compactMatches
-    );
-
-
-    /*
-    =====================================================
-    VALIDATE
-    =====================================================
-    */
-
-    const valid =
-      matches.filter(
-        x =>
-          /^[A-Z]{2}\d{9}TH$/.test(x)
-      );
-
-
-    /*
-    =====================================================
-    REMOVE DUPLICATE
-    =====================================================
-    */
-
-    const unique =
-      [...new Set(valid)];
-
-
-    console.log(
-      'FINAL TRACKING:',
-      unique
-    );
-
-
-    /*
-    =====================================================
-    สำคัญ:
-    ส่ง raw text กลับมาด้วยตอน debug
-    =====================================================
-    */
-
-    if (unique.length === 0) {
-
-      return res.status(200).json({
-
-        items: [],
-
-        debug: {
-          model: data?.model || MODEL,
-          raw: text
-        }
-
-      });
-
-    }
-
-
-    /*
-    =====================================================
-    RESULT
-    =====================================================
-    */
-
-    const items =
-      unique.map(
-        (tracking, index) => ({
-
-          seq:
-            index + 1,
-
-          tracking
-
+    if (typeof message?.content === 'string') {
+      text = message.content;
+    } else if (Array.isArray(message?.content)) {
+      text = message.content
+        .map(part => {
+          if (typeof part === 'string') return part;
+          return part?.text || '';
         })
-      );
+        .join('\n');
+    }
 
+    text = String(text || '').trim();
 
-    return res.status(200).json({
+    console.log('OCR raw response:', text);
 
-      items,
+    if (!text) {
+      res.status(200).json({ items: [] });
+      return;
+    }
 
-      debug: {
-        model: data?.model || MODEL
+    const items = [];
+    const seenSeq = new Set();
+    const seenTracking = new Set();
+
+    /*
+      Tracking format:
+
+      WB368998512TH
+      WB 3689 9851 2 TH
+      WB-3689-9851-2-TH
+    */
+
+    const trackingRegex =
+      /\b([A-Z]{2})[\s\-]*(\d{4})[\s\-]*(\d{4})[\s\-]*(\d)[\s\-]*TH\b/gi;
+
+    const lines = text.split(/\r?\n/);
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+
+      if (!line) continue;
+
+      /*
+        First try the ideal format:
+
+        12|WB368998512TH
+        12 | WB 3689 9851 2 TH
+        12. WB 3689 9851 2 TH
+      */
+
+      const seqMatch = line.match(/^\s*(\d{1,3})\s*(?:[.|):\-]\s*|\|)/);
+
+      let seq = seqMatch ? parseInt(seqMatch[1], 10) : null;
+
+      const matches = [...line.matchAll(trackingRegex)];
+
+      if (matches.length === 0) {
+        continue;
       }
 
-    });
+      for (const match of matches) {
+        const tracking =
+          (
+            match[1] +
+            match[2] +
+            match[3] +
+            match[4] +
+            'TH'
+          ).toUpperCase();
 
+        /*
+          If sequence number wasn't detected at the beginning,
+          try finding a number immediately before the tracking code.
+        */
+        if (!seq) {
+          const before = line.slice(0, match.index);
 
-  } catch (error) {
+          const numbers = before.match(/\b\d{1,3}\b/g);
 
-    console.error(
-      'SERVER ERROR:',
-      error
+          if (numbers && numbers.length) {
+            seq = parseInt(numbers[numbers.length - 1], 10);
+          }
+        }
+
+        if (
+          seq &&
+          seq >= 1 &&
+          seq <= 300 &&
+          /^[A-Z]{2}\d{9}TH$/.test(tracking)
+        ) {
+          if (!seenSeq.has(seq) && !seenTracking.has(tracking)) {
+            items.push({
+              seq,
+              tracking
+            });
+
+            seenSeq.add(seq);
+            seenTracking.add(tracking);
+          }
+        }
+      }
+    }
+
+    /*
+      Sort by the printed sequence number.
+    */
+    items.sort((a, b) => a.seq - b.seq);
+
+    console.log(
+      `OCR parsed ${items.length} tracking numbers`
     );
 
+    res.status(200).json({ items });
 
-    return res.status(500).json({
+  } catch (err) {
+    console.error('Extract error:', err);
 
-      error:
-        error.message ||
-        'เกิดข้อผิดพลาดในเซิร์ฟเวอร์'
-
+    res.status(500).json({
+      error: err.message || 'Unexpected server error'
     });
-
   }
-
-}
+};
