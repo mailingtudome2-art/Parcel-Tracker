@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     }
 
     // ใช้ Free Router
-    const MODEL = 'google/gemma-4-26b-a4b-it:free';
+    const MODEL = 'openrouter/free';
 
     // ทำให้เป็น Data URL ถ้ายังไม่ได้เป็น
     const imageDataUrl = image.startsWith('data:')
