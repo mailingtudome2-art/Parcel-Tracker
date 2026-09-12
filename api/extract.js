@@ -1,89 +1,38 @@
 export default async function handler(req, res) {
 
-  /*
-  =========================================================
-  METHOD
-  =========================================================
-  */
-
-  if(req.method !== 'POST'){
-
+  if (req.method !== 'POST') {
     return res.status(405).json({
-      error:'Method Not Allowed'
+      error: 'Method Not Allowed'
     });
-
   }
 
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
-  /*
-  =========================================================
-  API KEY
-  =========================================================
-  */
-
-  const apiKey =
-    process.env.OPENROUTER_API_KEY;
-
-
-  if(!apiKey){
-
+  if (!apiKey) {
     return res.status(500).json({
-
-      error:
-        'ไม่พบ OPENROUTER_API_KEY ใน Vercel'
-
+      error: 'ไม่พบ OPENROUTER_API_KEY ใน Vercel'
     });
-
   }
 
+  try {
 
-  try{
+    const { image, mediaType } = req.body || {};
 
-    /*
-    =======================================================
-    รับข้อมูล
-    =======================================================
-    */
-
-    const {
-      image,
-      mediaType
-    } = req.body || {};
-
-
-    if(!image){
-
+    if (!image) {
       return res.status(400).json({
-
-        error:
-          'ไม่พบรูปภาพ'
-
+        error: 'ไม่พบรูปภาพ'
       });
-
     }
 
-
     /*
-    =======================================================
-    MODEL
-    =======================================================
-
-    openrouter/free
-
-    จะเลือก free model ที่รองรับ
-    image input ให้โดยอัตโนมัติ
-    =======================================================
+    =====================================================
+    ใช้โมเดลฟรีตัวใหม่โดยตรง
+    =====================================================
     */
 
     const MODEL =
-      'openrouter/free';
+      'inclusionai/ling-3.0-flash-vl:free';
 
-
-    /*
-    =======================================================
-    IMAGE DATA URL
-    =======================================================
-    */
 
     const imageDataUrl =
       image.startsWith('data:')
@@ -92,174 +41,128 @@ export default async function handler(req, res) {
 
 
     /*
-    =======================================================
+    =====================================================
     PROMPT
-    =======================================================
+    =====================================================
     */
 
     const prompt = `
+อ่านข้อความเลขพัสดุจากภาพนี้
 
-คุณเป็นระบบ OCR สำหรับอ่านเลขพัสดุไปรษณีย์ไทยจากภาพ
+ภาพนี้เป็นตารางใบนำจ่าย ป.303 ของไปรษณีย์ไทย
 
-ภาพที่ส่งมาเป็นบริเวณตารางของใบนำจ่าย ป.303
+เลขพัสดุมีรูปแบบ:
 
-หน้าที่ของคุณคือ:
-อ่านข้อความเลขพัสดุที่มองเห็นจริงในภาพ
-และส่งกลับเฉพาะเลขพัสดุเท่านั้น
+AA 1234 5678 9 TH
 
-รูปแบบเลขพัสดุ:
+หรือ
 
-ตัวอักษรอังกฤษ 2 ตัว
-+
-ตัวเลข 9 หลัก
-+
-TH
+AA123456789TH
+
+โดย:
+- AA = ตัวอักษรภาษาอังกฤษ 2 ตัว
+- ตามด้วยตัวเลข 9 หลัก
+- ลงท้ายด้วย TH
 
 ตัวอย่าง:
-
-EM123456789TH
-RR987654321TH
-WB368998512TH
-
-ในเอกสารจริง เลขอาจถูกพิมพ์เว้นวรรค เช่น:
 
 WB 3689 9851 2 TH
 JG 0674 5041 2 TH
 OB 4102 5193 1 TH
 
-ให้รวมช่องว่างกลับเป็น:
+ต้องตอบเป็น:
 
 WB368998512TH
 JG067450412TH
 OB410251931TH
 
-กฎสำคัญ:
+กติกาสำคัญมาก:
 
-1. อ่านจากภาพจริงเท่านั้น
-2. ห้ามเดาเลขที่มองไม่เห็น
-3. ห้ามสร้างเลขขึ้นมาเอง
-4. ถ้ามีหลายรายการ ให้หาให้ครบทุกเลขที่มองเห็น
-5. ตัวอักษรต้องเป็นภาษาอังกฤษ
-6. ต้องมีตัวเลขทั้งหมด 9 หลัก
-7. ต้องลงท้ายด้วย TH
-8. ใช้ตัวพิมพ์ใหญ่ทั้งหมด
-9. ห้ามใส่คำอธิบาย
-10. ห้ามใส่ Markdown
-11. ห้ามใส่ bullet
-12. ห้ามใส่หมายเลขลำดับ
-13. ให้ตอบเลขพัสดุทีละบรรทัด
-14. ถ้าอ่านไม่ได้จริง ๆ ให้ตอบ NONE
+- อ่านเฉพาะเลขที่เห็นจริงในภาพ
+- ห้ามเดา
+- ห้ามสร้างเลข
+- ห้ามแก้เลขที่อ่านไม่ชัดโดยการเดา
+- ถ้ามีหลายแถว ให้ตรวจทุกแถว
+- รวมช่องว่างระหว่างตัวอักษรและตัวเลข
+- ใช้ตัวพิมพ์ใหญ่
+- ตอบเฉพาะเลขพัสดุ
+- หนึ่งเลขต่อหนึ่งบรรทัด
+- ห้ามใส่คำอธิบาย
+- ห้ามใส่หมายเลขลำดับ
+- ห้ามใส่ Markdown
 
-ตัวอย่างคำตอบ:
+ตัวอย่าง:
 
 WB368998512TH
 WB464939383TH
-JG067450412TH
+WB462670430TH
 
-ถ้าไม่พบเลข:
+ถ้าอ่านเลขไม่ได้จริง ๆ ให้ตอบ:
 
 NONE
-
 `;
 
 
     /*
-    =======================================================
-    CALL OPENROUTER
-    =======================================================
+    =====================================================
+    OPENROUTER
+    =====================================================
     */
 
-    const response =
-      await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
 
-          method:'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
 
-          headers:{
+          'HTTP-Referer':
+            'https://parcel-tracker-mailing.vercel.app'
+        },
 
-            'Authorization':
-              `Bearer ${apiKey}`,
+        body: JSON.stringify({
 
-            'Content-Type':
-              'application/json',
+          model: MODEL,
 
-            /*
-            X-Title ไม่ใส่
-            เพื่อป้องกันปัญหา ByteString
-            จากภาษาไทยใน HTTP header
-            */
+          messages: [
+            {
+              role: 'user',
 
-            'HTTP-Referer':
-              'https://parcel-tracker-mailing.vercel.app'
+              content: [
 
-          },
+                {
+                  type: 'text',
+                  text: prompt
+                },
 
+                {
+                  type: 'image_url',
 
-          body:JSON.stringify({
-
-            model:MODEL,
-
-
-            messages:[
-
-              {
-
-                role:'user',
-
-                content:[
-
-                  {
-
-                    type:'text',
-
-                    text:prompt
-
-                  },
-
-
-                  {
-
-                    type:'image_url',
-
-                    image_url:{
-
-                      url:imageDataUrl
-
-                    }
-
+                  image_url: {
+                    url: imageDataUrl
                   }
 
-                ]
+                }
 
-              }
+              ]
+            }
+          ],
 
-            ],
+          temperature: 0,
 
+          max_tokens: 800
 
-            /*
-            OCR ไม่ต้องการ randomness
-            */
-
-            temperature:0,
-
-
-            /*
-            เผื่อกรณีมีเลขหลายสิบรายการ
-            */
-
-            max_tokens:600
-
-          })
-
-        }
-      );
+        })
+      }
+    );
 
 
     /*
-    =======================================================
-    RESPONSE JSON
-    =======================================================
+    =====================================================
+    อ่าน response
+    =====================================================
     */
 
     const data =
@@ -267,55 +170,54 @@ NONE
 
 
     /*
-    =======================================================
-    OPENROUTER ERROR
-    =======================================================
+    =====================================================
+    ERROR
+    =====================================================
     */
 
-    if(!response.ok){
+    if (!response.ok) {
 
       console.error(
-        'OpenRouter Error:',
-        JSON.stringify(
-          data,
-          null,
-          2
-        )
+        'OPENROUTER ERROR:',
+        JSON.stringify(data, null, 2)
       );
 
+      return res.status(response.status).json({
 
-      return res
-        .status(response.status)
-        .json({
+        error:
+          `OpenRouter API error (${response.status}): ` +
+          (
+            data?.error?.message ||
+            JSON.stringify(data)
+          )
 
-          error:
-            `OpenRouter API error (${response.status}): ` +
-            (
-              data?.error?.message ||
-              JSON.stringify(data)
-            )
-
-        });
+      });
 
     }
 
 
     /*
-    =======================================================
-    ดูว่า free router เลือก model ตัวไหน
-    =======================================================
+    =====================================================
+    DEBUG
+    =====================================================
     */
 
     console.log(
-      'OpenRouter selected model:',
+      'MODEL USED:',
       data?.model
     );
 
 
+    console.log(
+      'FULL RESPONSE:',
+      JSON.stringify(data, null, 2)
+    );
+
+
     /*
-    =======================================================
-    อ่าน content
-    =======================================================
+    =====================================================
+    CONTENT
+    =====================================================
     */
 
     const rawContent =
@@ -325,17 +227,16 @@ NONE
     let text = '';
 
 
-    if(Array.isArray(rawContent)){
+    if (Array.isArray(rawContent)) {
 
       text =
         rawContent
           .map(
-            part =>
-              part?.text || ''
+            part => part?.text || ''
           )
           .join('\n');
 
-    }else{
+    } else {
 
       text =
         String(
@@ -346,263 +247,154 @@ NONE
 
 
     console.log(
-      'OpenRouter raw response:',
+      'AI RAW TEXT:',
       text
     );
 
 
     /*
-    =======================================================
-    CLEAN TEXT
-    =======================================================
+    =====================================================
+    CLEAN
+    =====================================================
     */
 
     const cleaned =
       text
         .toUpperCase()
-        .replace(
-          /\r/g,
-          '\n'
-        )
-        .replace(
-          /[“”"'`*#()[\]{}<>]/g,
-          ' '
-        );
+        .replace(/\r/g, '\n');
 
 
     console.log(
-      'Cleaned response:',
+      'CLEANED:',
       cleaned
     );
 
 
     /*
-    =======================================================
-    เก็บผลลัพธ์
-    =======================================================
+    =====================================================
+    ดึงเลขแบบติดกัน
+    =====================================================
     */
 
     const matches = [];
 
 
-    /*
-    =======================================================
-    FORMAT 1
-
-    WB368998512TH
-    EM123456789TH
-    =======================================================
-    */
-
     const normalRegex =
-      /\b([A-Z]{2})[\s\-._:/]*(\d{9})[\s\-._:/]*TH\b/gi;
+      /([A-Z]{2})[^A-Z0-9]*(\d{9})[^A-Z0-9]*TH/gi;
 
 
-    for(
+    for (
       const match of cleaned.matchAll(
         normalRegex
       )
-    ){
+    ) {
 
       const tracking =
         `${match[1]}${match[2]}TH`
           .toUpperCase();
 
-
-      matches.push(
-        tracking
-      );
+      matches.push(tracking);
 
     }
 
 
     /*
-    =======================================================
-    FORMAT 2
+    =====================================================
+    ดึงเลขแบบ:
 
     WB 3689 9851 2 TH
-
-    2 letters
-    +
-    4 digits
-    +
-    4 digits
-    +
-    1 digit
-    +
-    TH
-    =======================================================
+    =====================================================
     */
 
     const spacedRegex =
-      /\b([A-Z]{2})\s*[-._:/]?\s*(\d{4})\s*[-._:/]?\s*(\d{4})\s*[-._:/]?\s*(\d)\s*[-._:/]?\s*TH\b/gi;
+      /([A-Z]{2})\s*(\d{4})\s*(\d{4})\s*(\d)\s*TH/gi;
 
 
-    for(
+    for (
       const match of cleaned.matchAll(
         spacedRegex
       )
-    ){
+    ) {
 
       const tracking =
-        (
-          `${match[1]}` +
-          `${match[2]}` +
-          `${match[3]}` +
-          `${match[4]}` +
-          'TH'
-        ).toUpperCase();
+        `${match[1]}${match[2]}${match[3]}${match[4]}TH`
+          .toUpperCase();
 
-
-      matches.push(
-        tracking
-      );
+      matches.push(tracking);
 
     }
 
 
     /*
-    =======================================================
-    FORMAT 3
-
-    เผื่อ AI ใส่ข้อความประกอบ
-    หรือใส่เลขลำดับ
-
-    เช่น:
-
-    1. WB 3689 9851 2 TH
-    2. WB 4649 3938 3 TH
-
-    จะดึงเฉพาะเลขออกมา
-    =======================================================
+    =====================================================
+    เผื่อ AI ใส่เลขติดกัน
+    =====================================================
     */
 
-    const lines =
-      cleaned.split('\n');
-
-
-    for(
-      const line of lines
-    ){
-
-      /*
-      เอาเฉพาะ A-Z และ 0-9
-      */
-
-      const compactLine =
-        line.replace(
-          /[^A-Z0-9]/g,
-          ''
-        );
-
-
-      /*
-      แบบติดกัน
-      */
-
-      const compactMatches =
-        compactLine.match(
-          /[A-Z]{2}\d{9}TH/g
-        ) || [];
-
-
-      for(
-        const tracking of compactMatches
-      ){
-
-        matches.push(
-          tracking
-        );
-
-      }
-
-    }
-
-
-    /*
-    =======================================================
-    FORMAT 4
-
-    บาง model อาจคืน:
-
-    WB3689 9851 2TH
-
-    หรือมี punctuation แปลก ๆ
-
-    ลองทำ compact ทั้ง response
-    =======================================================
-    */
-
-    const compactAll =
+    const compact =
       cleaned.replace(
         /[^A-Z0-9]/g,
         ''
       );
 
 
-    const compactAllMatches =
-      compactAll.match(
+    const compactMatches =
+      compact.match(
         /[A-Z]{2}\d{9}TH/g
       ) || [];
 
 
-    for(
-      const tracking of compactAllMatches
-    ){
-
-      matches.push(
-        tracking
-      );
-
-    }
-
-
-    /*
-    =======================================================
-    VALIDATE
-    =======================================================
-    */
-
-    const validTracking =
-      matches.filter(
-        tracking =>
-          /^[A-Z]{2}\d{9}TH$/
-            .test(tracking)
-      );
-
-
-    /*
-    =======================================================
-    REMOVE DUPLICATES
-    =======================================================
-    */
-
-    const uniqueTracking = [
-      ...new Set(
-        validTracking
-      )
-    ];
-
-
-    console.log(
-      'Detected tracking numbers:',
-      uniqueTracking
+    matches.push(
+      ...compactMatches
     );
 
 
     /*
-    =======================================================
-    NO RESULT
-    =======================================================
+    =====================================================
+    VALIDATE
+    =====================================================
     */
 
-    if(
-      uniqueTracking.length === 0
-    ){
+    const valid =
+      matches.filter(
+        x =>
+          /^[A-Z]{2}\d{9}TH$/.test(x)
+      );
+
+
+    /*
+    =====================================================
+    REMOVE DUPLICATE
+    =====================================================
+    */
+
+    const unique =
+      [...new Set(valid)];
+
+
+    console.log(
+      'FINAL TRACKING:',
+      unique
+    );
+
+
+    /*
+    =====================================================
+    สำคัญ:
+    ส่ง raw text กลับมาด้วยตอน debug
+    =====================================================
+    */
+
+    if (unique.length === 0) {
 
       return res.status(200).json({
 
-        items:[]
+        items: [],
+
+        debug: {
+          model: data?.model || MODEL,
+          raw: text
+        }
 
       });
 
@@ -610,17 +402,14 @@ NONE
 
 
     /*
-    =======================================================
-    BUILD ITEMS
-    =======================================================
+    =====================================================
+    RESULT
+    =====================================================
     */
 
     const items =
-      uniqueTracking.map(
-        (
-          tracking,
-          index
-        ) => ({
+      unique.map(
+        (tracking, index) => ({
 
           seq:
             index + 1,
@@ -631,23 +420,21 @@ NONE
       );
 
 
-    /*
-    =======================================================
-    RETURN
-    =======================================================
-    */
-
     return res.status(200).json({
 
-      items
+      items,
+
+      debug: {
+        model: data?.model || MODEL
+      }
 
     });
 
 
-  }catch(error){
+  } catch (error) {
 
     console.error(
-      'Server Error:',
+      'SERVER ERROR:',
       error
     );
 
