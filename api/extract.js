@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     // ==============================
     // OpenRouter Vision Model
     // ==============================
-    const MODEL = 'google/gemma-4-31b-it:free';
+    const MODEL = 'openrouter/free';
 
     // ถ้า image มี data:image/... อยู่แล้ว
     // จะใช้ 그대로
