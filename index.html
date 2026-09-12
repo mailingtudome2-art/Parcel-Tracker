@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ป.303 SCANNER — ค้นหาเลขพัสดุ</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
 <style>
   :root{
     --bg:#ffffff;
@@ -22,136 +20,60 @@
     --danger:#c62828;
     --good:#1d7a3c;
   }
-
-  *{
-    box-sizing:border-box;
-  }
-
-  html,body{
-    margin:0;
-    padding:0;
-  }
-
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
   body{
     background:
-      radial-gradient(
-        1200px 600px at 90% -10%,
-        #eef7ea 0%,
-        transparent 60%
-      ),
+      radial-gradient(1200px 600px at 90% -10%, #eef7ea 0%, transparent 60%),
       var(--bg);
-
     color:var(--ink);
     font-family:'Inter',system-ui,sans-serif;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
-
   @media (prefers-reduced-motion: reduce){
-    *{
-      animation-duration:0.001ms !important;
-      transition-duration:0.001ms !important;
-    }
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
   }
+  ::selection{ background:var(--highlight); color:var(--ink); }
+  :focus-visible{ outline:2px solid var(--orange); outline-offset:2px; }
 
-  ::selection{
-    background:var(--highlight);
-    color:var(--ink);
-  }
-
-  :focus-visible{
-    outline:2px solid var(--orange);
-    outline-offset:2px;
-  }
-
-  .wrap{
-    max-width:880px;
-    margin:0 auto;
-    padding:28px 20px 80px;
-  }
+  .wrap{ max-width:880px; margin:0 auto; padding:28px 20px 80px; }
 
   /* ---------- header ---------- */
-
-  header{
-    padding-bottom:18px;
-  }
-
+  header{ padding-bottom:18px; }
   .eyebrow{
     font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin:0 0 8px;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 8px;
   }
-
   h1{
     font-family:'Space Grotesk',sans-serif;
-    font-weight:700;
-    font-size:clamp(28px,5vw,40px);
-    margin:0;
-    letter-spacing:-0.01em;
-    line-height:1.05;
+    font-weight:700; font-size:clamp(28px,5vw,40px);
+    margin:0; letter-spacing:-0.01em; line-height:1.05;
   }
-
-  h1 .doc{
-    color:var(--orange);
-  }
-
-  .sub{
-    color:var(--muted);
-    margin:10px 0 0;
-    font-size:14.5px;
-    max-width:52ch;
-  }
+  h1 .doc{ color:var(--orange); }
+  .sub{ color:var(--muted); margin:10px 0 0; font-size:14.5px; max-width:52ch; }
 
   .barcode{
-    height:14px;
-    margin-top:20px;
-
-    background-image:
-      repeating-linear-gradient(
-        90deg,
-        var(--line) 0 2px,
-        transparent 2px 5px,
-        var(--line) 5px 8px,
-        transparent 8px 11px,
-        var(--line) 11px 12px,
-        transparent 12px 18px
-      );
-
+    height:14px; margin-top:20px;
+    background-image: repeating-linear-gradient(90deg,
+      var(--line) 0 2px, transparent 2px 5px,
+      var(--line) 5px 8px, transparent 8px 11px,
+      var(--line) 11px 12px, transparent 12px 18px);
     opacity:.9;
   }
 
-  section{
-    margin-top:34px;
-  }
-
-  .label-row{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:12px;
-  }
-
+  section{ margin-top:34px; }
+  .label-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px;}
   .section-title{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:600;
-    font-size:14px;
-    letter-spacing:.02em;
-    color:var(--ink);
-    margin:0;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;
+    letter-spacing:.02em; color:var(--ink); margin:0;
   }
-
   .count-tag{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted);
   }
 
   /* ---------- upload ---------- */
-
   .dropzone{
     border:1.5px dashed var(--line);
     border-radius:10px;
@@ -159,2050 +81,493 @@
     text-align:center;
     background:var(--panel);
     cursor:pointer;
-    transition:
-      border-color .15s ease,
-      background .15s ease;
+    transition: border-color .15s ease, background .15s ease;
   }
-
-  .dropzone:hover,
-  .dropzone.drag{
+  .dropzone:hover, .dropzone.drag{
     border-color:var(--orange);
     background:#e2f3e5;
   }
-
   #fileInput{
-    position:absolute;
-    width:1px;
-    height:1px;
-    padding:0;
-    margin:-1px;
-    overflow:hidden;
-    clip:rect(0,0,0,0);
-    white-space:nowrap;
-    border:0;
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
   }
-
-  .dropzone{
-    user-select:none;
-  }
-
-  .dz-title{
-    font-weight:600;
-    font-size:15px;
-  }
-
-  .dz-sub{
-    color:var(--muted);
-    font-size:13px;
-    margin-top:4px;
-  }
-
+  .dropzone{ user-select:none; }
+  .dz-title{ font-weight:600; font-size:15px; }
+  .dz-sub{ color:var(--muted); font-size:13px; margin-top:4px; }
   .dz-icon{
-    width:34px;
-    height:34px;
-    margin:0 auto 10px;
-    border:1.5px solid var(--muted);
-    border-radius:7px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--muted);
-    font-size:18px;
+    width:34px;height:34px;margin:0 auto 10px;
+    border:1.5px solid var(--muted); border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted); font-size:18px;
   }
 
   /* ---------- sheet cards ---------- */
-
-  .sheets{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
+  .sheets{ display:flex; flex-direction:column; gap:10px; }
   .sheet-card{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:10px 12px;
+    display:flex; align-items:center; gap:12px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px;
   }
-
   .thumb{
-    width:46px;
-    height:46px;
-    border-radius:6px;
-    object-fit:cover;
-    background:var(--panel-2);
-    flex:none;
-    border:1px solid var(--line);
+    width:46px;height:46px; border-radius:6px; object-fit:cover;
+    background:var(--panel-2); flex:none; border:1px solid var(--line);
   }
-
-  .thumb.placeholder{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--muted);
-    font-size:11px;
-    font-family:'IBM Plex Mono',monospace;
-  }
-
-  .sheet-meta{
-    flex:1;
-    min-width:0;
-  }
-
-  .sheet-name{
-    font-size:13.5px;
-    font-weight:500;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .sheet-status{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11.5px;
-    margin-top:2px;
-  }
-
-  .sheet-status.scanning{
-    color:var(--amber);
-  }
-
-  .sheet-status.done{
-    color:var(--good);
-  }
-
-  .sheet-status.error{
-    color:var(--danger);
-  }
-
+  .thumb.placeholder{ display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; font-family:'IBM Plex Mono',monospace;}
+  .sheet-meta{ flex:1; min-width:0; }
+  .sheet-name{ font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sheet-status{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; margin-top:2px; }
+  .sheet-status.scanning{ color:var(--amber); }
+  .sheet-status.done{ color:var(--good); }
+  .sheet-status.error{ color:var(--danger); }
   .spinner{
-    width:11px;
-    height:11px;
-    border-radius:50%;
-    border:2px solid rgba(138,109,0,.25);
-    border-top-color:var(--amber);
-    display:inline-block;
-    margin-right:6px;
-    vertical-align:-1px;
+    width:11px;height:11px;border-radius:50%;
+    border:2px solid rgba(138,109,0,.25); border-top-color:var(--amber);
+    display:inline-block; margin-right:6px; vertical-align:-1px;
     animation:spin .7s linear infinite;
   }
-
-  @keyframes spin{
-    to{
-      transform:rotate(360deg);
-    }
-  }
-
-  .sheet-actions{
-    display:flex;
-    gap:6px;
-    flex:none;
-  }
-
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .sheet-actions{ display:flex; gap:6px; flex:none; }
   .icon-btn{
-    background:transparent;
-    border:1px solid var(--line);
-    color:var(--muted);
-    border-radius:6px;
-    width:28px;
-    height:28px;
-    cursor:pointer;
-    font-size:13px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+    border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
   }
-
-  .icon-btn:hover{
-    border-color:var(--orange);
-    color:var(--orange);
-  }
+  .icon-btn:hover{ border-color:var(--orange); color:var(--orange); }
 
   /* ---------- search ---------- */
-
-  .search-box{
-    position:relative;
-  }
-
+  .search-box{ position:relative; }
   .search-box input{
-    width:100%;
-    background:var(--panel-2);
-    border:1.5px solid var(--line);
-    color:var(--ink);
-    border-radius:10px;
-    padding:16px 16px 16px 46px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:17px;
-    letter-spacing:.03em;
+    width:100%; background:var(--panel-2); border:1.5px solid var(--line);
+    color:var(--ink); border-radius:10px; padding:16px 16px 16px 46px;
+    font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.03em;
   }
-
-  .search-box input::placeholder{
-    color:var(--muted);
-    font-family:'Inter',sans-serif;
-    letter-spacing:normal;
-  }
-
+  .search-box input::placeholder{ color:var(--muted); font-family:'Inter',sans-serif; letter-spacing:normal;}
   .search-box .glyph{
-    position:absolute;
-    left:16px;
-    top:50%;
-    transform:translateY(-50%);
-    color:var(--muted);
-    font-size:16px;
-    pointer-events:none;
+    position:absolute; left:16px; top:50%; transform:translateY(-50%);
+    color:var(--muted); font-size:16px; pointer-events:none;
   }
 
-  .empty-hint{
-    color:var(--muted);
-    font-size:13px;
-    margin-top:10px;
-  }
+  .empty-hint{ color:var(--muted); font-size:13px; margin-top:10px; }
 
-  .results{
-    margin-top:14px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-
+  .results{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
   .result-row{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    border-radius:10px;
+    display:flex; align-items:center; gap:14px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
     padding:14px 16px;
   }
-
   .seq-badge{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:700;
-    font-size:15px;
-    color:var(--bg);
-    background:var(--ink);
-    border-radius:7px;
-    min-width:38px;
-    height:38px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex:none;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
+    color:var(--bg); background:var(--ink);
+    border-radius:7px; min-width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center; flex:none;
   }
-
-  .result-main{
-    flex:1;
-    min-width:0;
-  }
-
+  .result-main{ flex:1; min-width:0; }
   .tracking-no{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:18px;
-    font-weight:500;
-    letter-spacing:.04em;
-    word-break:break-all;
-    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; letter-spacing:.04em;
+    word-break:break-all; color:var(--ink);
   }
-
   .tracking-no mark{
-    background:var(--highlight);
-    color:var(--ink);
-    font-weight:700;
-    padding:1px 3px;
-    border-radius:2px;
-    box-decoration-break:clone;
-    -webkit-box-decoration-break:clone;
+    background:var(--highlight); color:var(--ink); font-weight:700;
+    padding:1px 3px; border-radius:2px;
+    box-decoration-break:clone; -webkit-box-decoration-break:clone;
     transform:skew(-2deg);
     display:inline-block;
   }
-
-  .result-src{
-    color:var(--muted);
-    font-size:11.5px;
-    margin-top:3px;
-    font-family:'IBM Plex Mono',monospace;
-  }
-
+  .result-src{ color:var(--muted); font-size:11.5px; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
   .no-results{
-    color:var(--muted);
-    font-size:14px;
-    padding:18px 4px;
+    color:var(--muted); font-size:14px; padding:18px 4px;
   }
 
   footer{
-    margin-top:46px;
-    padding-top:16px;
-    border-top:1px solid var(--line);
-    display:flex;
-    justify-content:space-between;
-    color:var(--muted);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11.5px;
+    margin-top:46px; padding-top:16px; border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px;
   }
 
   @media (max-width:520px){
-    .sheet-card{
-      flex-wrap:wrap;
-    }
+    .sheet-card{ flex-wrap:wrap; }
   }
 </style>
 </head>
-
 <body>
-
 <div class="wrap">
 
   <header>
     <p class="eyebrow">บัญชีนำจ่าย · ป.303</p>
-
-    <h1>
-      ป<span class="doc">.303</span> SCANNER
-    </h1>
-
-    <p class="sub">
-      อัปโหลดรูปใบนำจ่าย แล้วพิมพ์เลขพัสดุบางส่วนเพื่อหาลำดับที่ในใบ — ไม่ต้องไล่ตาทีละบรรทัด
-    </p>
-
+    <h1>ป<span class="doc">.303</span> SCANNER</h1>
+    <p class="sub">อัปโหลดรูปใบนำจ่าย แล้วพิมพ์เลขพัสดุบางส่วนเพื่อหาลำดับที่ในใบ — ไม่ต้องไล่ตาทีละบรรทัด</p>
     <div class="barcode"></div>
   </header>
 
-
   <section>
-
     <div class="label-row">
-
-      <p class="section-title">
-        01 — อัปโหลดใบนำจ่าย
-      </p>
-
-      <span class="count-tag" id="sheetCount">
-        0 ใบ
-      </span>
-
+      <p class="section-title">01 — อัปโหลดใบนำจ่าย</p>
+      <span class="count-tag" id="sheetCount">0 ใบ</span>
     </div>
-
-
-    <div
-      class="dropzone"
-      id="dropzone"
-      tabindex="0"
-      role="button"
-      aria-label="อัปโหลดรูปใบนำจ่าย"
-    >
-
-      <div class="dz-icon">
-        ＋
-      </div>
-
-      <div class="dz-title">
-        ลากรูปมาวาง หรือแตะเพื่อเลือกไฟล์
-      </div>
-
-      <div class="dz-sub">
-        อัปโหลดได้หลายรูป · JPG / PNG / HEIC
-      </div>
-
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="อัปโหลดรูปใบนำจ่าย">
+      <div class="dz-icon">＋</div>
+      <div class="dz-title">ลากรูปมาวาง หรือแตะเพื่อเลือกไฟล์</div>
+      <div class="dz-sub">อัปโหลดได้หลายรูป · JPG / PNG / HEIC</div>
     </div>
-
-
-    <input
-      type="file"
-      id="fileInput"
-      accept="image/*"
-      multiple
-    >
-
+    <input type="file" id="fileInput" accept="image/*" multiple>
   </section>
-
 
   <section id="sheetsSection" style="display:none;">
-
-    <div
-      class="sheets"
-      id="sheetsList"
-    ></div>
-
+    <div class="sheets" id="sheetsList"></div>
   </section>
-
 
   <section>
-
     <div class="label-row">
-
-      <p class="section-title">
-        02 — ค้นหาเลขพัสดุ
-      </p>
-
-      <span class="count-tag" id="itemCount">
-        0 รายการ
-      </span>
-
+      <p class="section-title">02 — ค้นหาเลขพัสดุ</p>
+      <span class="count-tag" id="itemCount">0 รายการ</span>
     </div>
-
-
     <div class="search-box">
-
-      <span class="glyph">
-        #
-      </span>
-
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="พิมพ์ตัวเลขบางส่วน เช่น 5193 หรือ 0161"
-        inputmode="numeric"
-        autocomplete="off"
-      >
-
+      <span class="glyph">#</span>
+      <input type="text" id="searchInput" placeholder="พิมพ์ตัวเลขบางส่วน เช่น 5193 หรือ 0161" inputmode="numeric" autocomplete="off">
     </div>
-
-
-    <div
-      id="emptyHint"
-      class="empty-hint"
-    >
-      ยังไม่มีข้อมูล — อัปโหลดใบนำจ่ายด้านบนก่อน
-    </div>
-
-
-    <div
-      class="results"
-      id="results"
-    ></div>
-
+    <div id="emptyHint" class="empty-hint">ยังไม่มีข้อมูล — อัปโหลดใบนำจ่ายด้านบนก่อน</div>
+    <div class="results" id="results"></div>
   </section>
 
-
   <footer>
-
-    <span id="footerLeft">
-      ยังไม่มีใบนำจ่าย
-    </span>
-
-    <span>
-      ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น
-    </span>
-
+    <span id="footerLeft">ยังไม่มีใบนำจ่าย</span>
+    <span>ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น</span>
   </footer>
-
 </div>
 
-
 <script>
-
 const STORAGE_KEY = 'parcel-tracker-sheets-v1';
+let sheets = []; // {id, filename, status, error, items: [{seq, tracking}]}
 
-let sheets = [];
-
-
-/*
-=========================================================
-DOM
-=========================================================
-*/
-
-const sheetsList =
-  document.getElementById('sheetsList');
-
-const sheetsSection =
-  document.getElementById('sheetsSection');
-
-const sheetCount =
-  document.getElementById('sheetCount');
-
-const itemCount =
-  document.getElementById('itemCount');
-
-const resultsEl =
-  document.getElementById('results');
-
-const emptyHint =
-  document.getElementById('emptyHint');
-
-const searchInput =
-  document.getElementById('searchInput');
-
-const footerLeft =
-  document.getElementById('footerLeft');
-
-const dropzone =
-  document.getElementById('dropzone');
-
-const fileInput =
-  document.getElementById('fileInput');
-
-
-/*
-=========================================================
-รวมรายการทั้งหมด
-=========================================================
-*/
+const sheetsList = document.getElementById('sheetsList');
+const sheetsSection = document.getElementById('sheetsSection');
+const sheetCount = document.getElementById('sheetCount');
+const itemCount = document.getElementById('itemCount');
+const resultsEl = document.getElementById('results');
+const emptyHint = document.getElementById('emptyHint');
+const searchInput = document.getElementById('searchInput');
+const footerLeft = document.getElementById('footerLeft');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
 
 function allItems(){
-
   const out = [];
-
   for(const s of sheets){
-
     if(s.status === 'done'){
-
       for(const it of s.items){
-
-        out.push({
-          seq: it.seq,
-          tracking: it.tracking,
-          sheetName: s.filename
-        });
-
+        out.push({ seq: it.seq, tracking: it.tracking, sheetName: s.filename });
       }
-
     }
-
   }
-
   return out;
 }
 
-
-/*
-=========================================================
-เอาเฉพาะตัวเลข
-=========================================================
-*/
-
-function digitsOnly(str){
-
-  return (str || '')
-    .replace(/[^0-9]/g,'');
-
-}
-
-
-/*
-=========================================================
-RENDER
-=========================================================
-*/
+function digitsOnly(str){ return (str||'').replace(/[^0-9]/g,''); }
 
 function render(){
-
-  sheetsSection.style.display =
-    sheets.length ? 'block' : 'none';
-
-
-  sheetCount.textContent =
-    sheets.length + ' ใบ';
-
-
+  sheetsSection.style.display = sheets.length ? 'block' : 'none';
+  sheetCount.textContent = sheets.length + ' ใบ';
   sheetsList.innerHTML = '';
-
-
   for(const s of sheets){
+    const card = document.createElement('div');
+    card.className = 'sheet-card';
 
-    const card =
-      document.createElement('div');
-
-    card.className =
-      'sheet-card';
-
-
-    /*
-    thumbnail
-    */
-
-    const thumb =
-      document.createElement(
-        s.thumbUrl ? 'img' : 'div'
-      );
-
-    thumb.className =
-      'thumb' +
-      (s.thumbUrl ? '' : ' placeholder');
-
-
-    if(s.thumbUrl){
-
-      thumb.src = s.thumbUrl;
-
-    }else{
-
-      thumb.textContent = 'IMG';
-
-    }
-
-
+    const thumb = document.createElement(s.thumbUrl ? 'img' : 'div');
+    thumb.className = 'thumb' + (s.thumbUrl ? '' : ' placeholder');
+    if(s.thumbUrl){ thumb.src = s.thumbUrl; } else { thumb.textContent = 'IMG'; }
     card.appendChild(thumb);
 
-
-    /*
-    meta
-    */
-
-    const meta =
-      document.createElement('div');
-
-    meta.className =
-      'sheet-meta';
-
-
-    const name =
-      document.createElement('div');
-
-    name.className =
-      'sheet-name';
-
-    name.textContent =
-      s.filename;
-
-
-    const status =
-      document.createElement('div');
-
-
+    const meta = document.createElement('div');
+    meta.className = 'sheet-meta';
+    const name = document.createElement('div');
+    name.className = 'sheet-name';
+    name.textContent = s.filename;
+    const status = document.createElement('div');
     if(s.status === 'scanning'){
-
-      status.className =
-        'sheet-status scanning';
-
-      status.innerHTML =
-        '<span class="spinner"></span>กำลังอ่านเลขพัสดุ…';
-
+      status.className = 'sheet-status scanning';
+      status.innerHTML = '<span class="spinner"></span>กำลังอ่านเลขพัสดุ…';
+    } else if(s.status === 'done'){
+      status.className = 'sheet-status done';
+      status.textContent = 'สำเร็จ — พบ ' + s.items.length + ' รายการ';
+    } else if(s.status === 'error'){
+      status.className = 'sheet-status error';
+      status.textContent = 'อ่านไม่สำเร็จ: ' + (s.error || 'ลองใหม่อีกครั้ง');
     }
-
-    else if(s.status === 'done'){
-
-      status.className =
-        'sheet-status done';
-
-      status.textContent =
-        'สำเร็จ — พบ ' +
-        s.items.length +
-        ' รายการ';
-
-    }
-
-    else if(s.status === 'error'){
-
-      status.className =
-        'sheet-status error';
-
-      status.textContent =
-        'อ่านไม่สำเร็จ: ' +
-        (s.error || 'ลองใหม่อีกครั้ง');
-
-    }
-
-
     meta.appendChild(name);
-
     meta.appendChild(status);
-
     card.appendChild(meta);
 
-
-    /*
-    buttons
-    */
-
-    const actions =
-      document.createElement('div');
-
-    actions.className =
-      'sheet-actions';
-
-
+    const actions = document.createElement('div');
+    actions.className = 'sheet-actions';
     if(s.status === 'error'){
-
-      const retryBtn =
-        document.createElement('button');
-
-      retryBtn.className =
-        'icon-btn';
-
-      retryBtn.title =
-        'ลองใหม่';
-
-      retryBtn.textContent =
-        '↻';
-
-      retryBtn.onclick =
-        () => retrySheet(s.id);
-
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'icon-btn';
+      retryBtn.title = 'ลองใหม่';
+      retryBtn.textContent = '↻';
+      retryBtn.onclick = () => retrySheet(s.id);
       actions.appendChild(retryBtn);
-
     }
-
-
-    const delBtn =
-      document.createElement('button');
-
-    delBtn.className =
-      'icon-btn';
-
-    delBtn.title =
-      'ลบ';
-
-    delBtn.textContent =
-      '×';
-
-    delBtn.onclick =
-      () => removeSheet(s.id);
-
+    const delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn';
+    delBtn.title = 'ลบ';
+    delBtn.textContent = '×';
+    delBtn.onclick = () => removeSheet(s.id);
     actions.appendChild(delBtn);
-
-
     card.appendChild(actions);
 
     sheetsList.appendChild(card);
-
   }
 
-
-  /*
-  รายการพัสดุ
-  */
-
-  const items =
-    allItems();
-
-
-  itemCount.textContent =
-    items.length + ' รายการ';
-
-
-  footerLeft.textContent =
-    sheets.length
-      ? (
-          'ใบนำจ่าย ' +
-          sheets.length +
-          ' ใบ · รวม ' +
-          items.length +
-          ' พัสดุ'
-        )
-      : 'ยังไม่มีใบนำจ่าย';
-
-
-  emptyHint.style.display =
-    items.length ? 'none' : 'block';
-
+  const items = allItems();
+  itemCount.textContent = items.length + ' รายการ';
+  footerLeft.textContent = sheets.length
+    ? ('ใบนำจ่าย ' + sheets.length + ' ใบ · รวม ' + items.length + ' พัสดุ')
+    : 'ยังไม่มีใบนำจ่าย';
+  emptyHint.style.display = items.length ? 'none' : 'block';
 
   runSearch();
-
   persist();
-
 }
-
-
-/*
-=========================================================
-LOCAL STORAGE
-=========================================================
-*/
 
 function persist(){
-
   try{
-
-    const toSave =
-      sheets.map(s => ({
-
-        id: s.id,
-
-        filename: s.filename,
-
-        status:
-          s.status === 'scanning'
-            ? 'error'
-            : s.status,
-
-        error:
-          s.status === 'scanning'
-            ? 'ยกเลิกก่อนเสร็จ'
-            : s.error,
-
-        items: s.items || []
-
-      }));
-
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(toSave)
-    );
-
+    const toSave = sheets.map(s => ({
+      id: s.id, filename: s.filename, status: s.status === 'scanning' ? 'error' : s.status,
+      error: s.status === 'scanning' ? 'ยกเลิกก่อนเสร็จ' : s.error,
+      items: s.items || []
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }catch(e){}
-
 }
-
-
-/*
-=========================================================
-RESTORE
-=========================================================
-*/
 
 function restore(){
-
   try{
-
-    const raw =
-      localStorage.getItem(STORAGE_KEY);
-
-
+    const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
-
-      const parsed =
-        JSON.parse(raw);
-
-
-      sheets =
-        parsed.map(s => ({
-          ...s,
-          thumbUrl:null,
-          _file:null
-        }));
-
+      const parsed = JSON.parse(raw);
+      sheets = parsed.map(s => ({...s, thumbUrl:null}));
     }
-
-  }catch(e){
-
-    /*
-    ยังไม่มีข้อมูล
-    */
-
-  }
-
+  }catch(e){ /* no saved data yet */ }
 }
-
-
-/*
-=========================================================
-DELETE
-=========================================================
-*/
 
 function removeSheet(id){
-
-  sheets =
-    sheets.filter(
-      s => s.id !== id
-    );
-
+  sheets = sheets.filter(s => s.id !== id);
   render();
-
 }
-
-
-/*
-=========================================================
-ตรวจว่าเป็นรูปหรือไม่
-=========================================================
-*/
 
 function isLikelyImage(file){
-
-  if(file.type){
-
-    return file.type.startsWith('image/');
-
-  }
-
-  return /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i
-    .test(file.name || '');
-
+  if(file.type) return file.type.startsWith('image/');
+  return /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(file.name || '');
 }
-
-
-/*
-=========================================================
-IMAGE NORMALIZATION + CROP
-
-สิ่งที่ทำ:
-
-1. อ่านรูปต้นฉบับ
-2. ทำ thumbnail เป็นรูปเต็มใบ
-3. ถ้าเป็นภาพแนวตั้ง ให้ crop บริเวณตาราง
-4. ขยาย crop
-5. ปรับ grayscale / contrast
-6. ส่งเฉพาะ crop ไป AI
-
-สำหรับฟอร์ม ป.303 ที่ใช้ทดสอบ
-บริเวณตารางอยู่ประมาณช่วงกลางภาพ
-=========================================================
-*/
 
 function normalizeImage(file){
-
   return new Promise((resolve, reject) => {
-
-    const reader =
-      new FileReader();
-
-
-    reader.onerror =
-      () => reject(
-        new Error('อ่านไฟล์ไม่สำเร็จ')
-      );
-
-
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
     reader.onload = () => {
-
-      const img =
-        new Image();
-
-
-      img.onerror =
-        () => reject(
-          new Error('เปิดไฟล์รูปภาพนี้ไม่ได้')
-        );
-
-
+      const img = new Image();
+      img.onerror = () => reject(new Error('เปิดไฟล์รูปภาพนี้ไม่ได้'));
       img.onload = () => {
-
         try{
-
-          const originalWidth =
-            img.naturalWidth || img.width;
-
-          const originalHeight =
-            img.naturalHeight || img.height;
-
-
-          /*
-          =================================================
-          1. สร้าง thumbnail รูปเต็มใบ
-          =================================================
-          */
-
-          const previewMax =
-            1200;
-
-
-          let previewWidth =
-            originalWidth;
-
-          let previewHeight =
-            originalHeight;
-
-
-          if(
-            previewWidth > previewMax ||
-            previewHeight > previewMax
-          ){
-
-            const scale =
-              previewMax /
-              Math.max(
-                previewWidth,
-                previewHeight
-              );
-
-            previewWidth =
-              Math.round(
-                previewWidth * scale
-              );
-
-            previewHeight =
-              Math.round(
-                previewHeight * scale
-              );
-
+          // Keep the UI thumbnail as the full page, but send the dense parcel
+          // table to OCR. This reduces irrelevant text and makes small rows larger.
+          const fullW = img.width, fullH = img.height;
+          const thumbMax = 1200;
+          let tw = fullW, th = fullH;
+          if(Math.max(tw, th) > thumbMax){
+            const scale = thumbMax / Math.max(tw, th);
+            tw = Math.round(tw * scale); th = Math.round(th * scale);
           }
+          const thumbCanvas = document.createElement('canvas');
+          thumbCanvas.width = tw; thumbCanvas.height = th;
+          const thumbCtx = thumbCanvas.getContext('2d', {alpha:false});
+          thumbCtx.fillStyle = '#fff';
+          thumbCtx.fillRect(0,0,tw,th);
+          thumbCtx.drawImage(img,0,0,tw,th);
+          const dataUrl = thumbCanvas.toDataURL('image/jpeg',0.82);
 
+          // Typical ป.303 portrait sheet: the parcel table occupies the lower
+          // middle/lower part. Use generous margins so the first/last rows stay in.
+          const sx = Math.round(fullW * 0.045);
+          const sy = Math.round(fullH * 0.29);
+          const sw = Math.round(fullW * 0.91);
+          const sh = Math.round(fullH * 0.62);
 
-          const previewCanvas =
-            document.createElement('canvas');
+          const maxDim = 2200;
+          const cropScale = Math.min(1, maxDim / Math.max(sw, sh));
+          const cw = Math.max(1, Math.round(sw * cropScale));
+          const ch = Math.max(1, Math.round(sh * cropScale));
+          const canvas = document.createElement('canvas');
+          canvas.width = cw; canvas.height = ch;
+          const ctx = canvas.getContext('2d', {alpha:false});
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0,0,cw,ch);
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
 
-
-          previewCanvas.width =
-            previewWidth;
-
-          previewCanvas.height =
-            previewHeight;
-
-
-          const previewCtx =
-            previewCanvas.getContext('2d');
-
-
-          previewCtx.drawImage(
-            img,
-            0,
-            0,
-            previewWidth,
-            previewHeight
-          );
-
-
-          const previewDataUrl =
-            previewCanvas.toDataURL(
-              'image/jpeg',
-              0.82
-            );
-
-
-          /*
-          =================================================
-          2. กำหนดพื้นที่ OCR
-          =================================================
-
-          สำหรับ ป.303:
-
-          X = 5%
-          Y = 25%
-          W = 90%
-          H = 50%
-
-          จะครอบคลุมบริเวณตารางเลขพัสดุ
-          =================================================
-          */
-
-          const portrait =
-            originalHeight >
-            originalWidth * 1.05;
-
-
-          let cropX;
-          let cropY;
-          let cropWidth;
-          let cropHeight;
-
-
-          if(portrait){
-
-            cropX =
-              Math.round(
-                originalWidth * 0.05
-              );
-
-            cropY =
-              Math.round(
-                originalHeight * 0.25
-              );
-
-            cropWidth =
-              Math.round(
-                originalWidth * 0.90
-              );
-
-            cropHeight =
-              Math.round(
-                originalHeight * 0.50
-              );
-
-          }else{
-
-            /*
-            ถ้าไม่ใช่ภาพแนวตั้ง
-            ใช้ทั้งภาพ
-            */
-
-            cropX = 0;
-            cropY = 0;
-
-            cropWidth =
-              originalWidth;
-
-            cropHeight =
-              originalHeight;
-
+          // Mild contrast/sharpening without making thin table lines disappear.
+          const imageData = ctx.getImageData(0,0,cw,ch);
+          const d = imageData.data;
+          for(let i=0;i<d.length;i+=4){
+            d[i]   = Math.max(0, Math.min(255, (d[i]   - 128) * 1.12 + 128));
+            d[i+1] = Math.max(0, Math.min(255, (d[i+1] - 128) * 1.12 + 128));
+            d[i+2] = Math.max(0, Math.min(255, (d[i+2] - 128) * 1.12 + 128));
           }
+          ctx.putImageData(imageData,0,0);
 
-
-          /*
-          ป้องกันค่าหลุดขอบ
-          */
-
-          cropX =
-            Math.max(
-              0,
-              Math.min(
-                cropX,
-                originalWidth - 1
-              )
-            );
-
-
-          cropY =
-            Math.max(
-              0,
-              Math.min(
-                cropY,
-                originalHeight - 1
-              )
-            );
-
-
-          cropWidth =
-            Math.min(
-              cropWidth,
-              originalWidth - cropX
-            );
-
-
-          cropHeight =
-            Math.min(
-              cropHeight,
-              originalHeight - cropY
-            );
-
-
-          /*
-          =================================================
-          3. กำหนดขนาดภาพ OCR
-          =================================================
-
-          ไม่ส่งภาพใหญ่มากเกินไป
-          เพื่อช่วยลดเวลา upload / inference
-          */
-
-          const OCR_MAX_WIDTH =
-            2200;
-
-
-          let ocrWidth =
-            Math.min(
-              OCR_MAX_WIDTH,
-              cropWidth
-            );
-
-
-          let ocrHeight =
-            Math.round(
-              cropHeight *
-              (ocrWidth / cropWidth)
-            );
-
-
-          /*
-          ถ้า crop เดิมใหญ่กว่า 2200
-          จะถูกลดขนาด
-          */
-
-
-          const ocrCanvas =
-            document.createElement('canvas');
-
-
-          ocrCanvas.width =
-            ocrWidth;
-
-          ocrCanvas.height =
-            ocrHeight;
-
-
-          const ocrCtx =
-            ocrCanvas.getContext('2d');
-
-
-          /*
-          =================================================
-          4. วาด crop
-          =================================================
-          */
-
-          ocrCtx.drawImage(
-            img,
-
-            cropX,
-            cropY,
-            cropWidth,
-            cropHeight,
-
-            0,
-            0,
-            ocrWidth,
-            ocrHeight
-          );
-
-
-          /*
-          =================================================
-          5. ปรับ grayscale + contrast
-          =================================================
-          */
-
-          try{
-
-            const imageData =
-              ocrCtx.getImageData(
-                0,
-                0,
-                ocrWidth,
-                ocrHeight
-              );
-
-
-            const data =
-              imageData.data;
-
-
-            /*
-            contrast
-            */
-
-            const contrast =
-              1.18;
-
-            const factor =
-              (259 * (contrast + 255)) /
-              (255 * (259 - contrast));
-
-
-            for(
-              let i = 0;
-              i < data.length;
-              i += 4
-            ){
-
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-
-
-              /*
-              grayscale
-              */
-
-              let gray =
-                0.299 * r +
-                0.587 * g +
-                0.114 * b;
-
-
-              /*
-              contrast
-              */
-
-              gray =
-                factor *
-                (gray - 128) +
-                128;
-
-
-              gray =
-                Math.max(
-                  0,
-                  Math.min(
-                    255,
-                    gray
-                  )
-                );
-
-
-              data[i] =
-                gray;
-
-              data[i + 1] =
-                gray;
-
-              data[i + 2] =
-                gray;
-
-            }
-
-
-            ocrCtx.putImageData(
-              imageData,
-              0,
-              0
-            );
-
-          }catch(e){
-
-            /*
-            ถ้า browser ไม่อนุญาต
-            ก็ใช้ภาพที่วาดไว้ต่อ
-            */
-
-          }
-
-
-          /*
-          =================================================
-          6. สร้าง JPEG สำหรับ AI
-          =================================================
-          */
-
-          const ocrDataUrl =
-            ocrCanvas.toDataURL(
-              'image/jpeg',
-              0.88
-            );
-
-
-          const parts =
-            ocrDataUrl.split(',');
-
-
-          const base64 =
-            parts[1];
-
-
+          const dataUrlCrop = canvas.toDataURL('image/jpeg',0.88);
           resolve({
-
-            /*
-            รูปที่ส่ง AI
-            */
-
-            base64,
-
-            mediaType:
-              'image/jpeg',
-
-            /*
-            รูปเต็มใบสำหรับ thumbnail
-            */
-
-            dataUrl:
-              previewDataUrl,
-
-            /*
-            เก็บไว้เผื่อ debug
-            */
-
-            ocrDataUrl
-
+            base64: dataUrlCrop.split(',')[1],
+            mediaType:'image/jpeg',
+            dataUrl
           });
-
-
-        }catch(e){
-
-          console.error(
-            'Image normalize error:',
-            e
-          );
-
-
-          reject(
-            new Error(
-              'แปลงไฟล์รูปภาพไม่สำเร็จ'
-            )
-          );
-
-        }
-
+        }catch(e){ reject(new Error('แปลงไฟล์รูปภาพไม่สำเร็จ')); }
       };
-
-
-      img.src =
-        reader.result;
-
+      img.src = reader.result;
     };
-
-
     reader.readAsDataURL(file);
+  });
+}
 
+async function extractSheet(base64, mediaType){
+  const response = await fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64, mediaType })
   });
 
-}
-
-
-/*
-=========================================================
-เรียก API
-=========================================================
-*/
-
-async function extractSheet(
-  base64,
-  mediaType
-){
-
-  const response =
-    await fetch(
-      '/api/extract',
-      {
-        method:'POST',
-
-        headers:{
-          'Content-Type':
-            'application/json'
-        },
-
-        body:
-          JSON.stringify({
-            image:base64,
-            mediaType
-          })
-      }
-    );
-
-
   let data;
+  try{ data = await response.json(); }
+  catch(e){ throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'); }
 
-
-  try{
-
-    data =
-      await response.json();
-
-  }catch(e){
-
-    throw new Error(
-      'เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'
-    );
-
+  if(!response.ok || data.error){
+    throw new Error(data.error || 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ');
   }
-
-
-  if(
-    !response.ok ||
-    data.error
-  ){
-
-    throw new Error(
-      data.error ||
-      'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ'
-    );
-
+  if(!data.items || data.items.length === 0){
+    throw new Error('อ่านรูปแบบเลขพัสดุไม่สำเร็จ');
   }
-
-
-  if(
-    !data.items ||
-    data.items.length === 0
-  ){
-
-    throw new Error(
-      'อ่านรูปแบบเลขพัสดุไม่สำเร็จ'
-    );
-
-  }
-
-
   return data.items;
-
 }
-
-
-/*
-=========================================================
-PROCESS FILE
-=========================================================
-*/
 
 async function processFile(file){
-
-  const id =
-    's' +
-    Date.now() +
-    Math.random()
-      .toString(36)
-      .slice(2,7);
-
-
-  const sheet = {
-
-    id,
-
-    filename:
-      file.name ||
-      'รูปที่อัปโหลด',
-
-    status:
-      'scanning',
-
-    items:[],
-
-    thumbUrl:null,
-
-    _file:file
-
-  };
-
-
+  const id = 's' + Date.now() + Math.random().toString(36).slice(2,7);
+  const sheet = { id, filename: file.name || 'รูปที่อัปโหลด', status: 'scanning', items: [], thumbUrl: null, _file: file };
   sheets.push(sheet);
-
   render();
-
 
   try{
-
-    /*
-    normalize รูป
-    */
-
-    const normalized =
-      await normalizeImage(file);
-
-
-    /*
-    แสดง thumbnail รูปเต็ม
-    */
-
-    const target1 =
-      sheets.find(
-        s => s.id === id
-      );
-
-
-    if(target1){
-
-      target1.thumbUrl =
-        normalized.dataUrl;
-
-      render();
-
-    }
-
-
-    /*
-    ส่ง crop ไป AI
-    */
-
-    const items =
-      await extractSheet(
-        normalized.base64,
-        normalized.mediaType
-      );
-
-
-    const target =
-      sheets.find(
-        s => s.id === id
-      );
-
-
-    if(target){
-
-      target.status =
-        'done';
-
-      target.items =
-        items;
-
-    }
-
-
+    const { base64, mediaType, dataUrl } = await normalizeImage(file);
+    const target1 = sheets.find(s => s.id === id);
+    if(target1){ target1.thumbUrl = dataUrl; render(); }
+    const items = await extractSheet(base64, mediaType);
+    const target = sheets.find(s => s.id === id);
+    if(target){ target.status = 'done'; target.items = items; }
   }catch(err){
-
-    console.error(
-      'processFile error:',
-      err
-    );
-
-
-    const target =
-      sheets.find(
-        s => s.id === id
-      );
-
-
-    if(target){
-
-      target.status =
-        'error';
-
-      target.error =
-        err.message ||
-        'เกิดข้อผิดพลาด';
-
-    }
-
+    const target = sheets.find(s => s.id === id);
+    if(target){ target.status = 'error'; target.error = err.message || 'เกิดข้อผิดพลาด'; }
   }
-
-
   render();
-
 }
-
-
-/*
-=========================================================
-RETRY
-=========================================================
-*/
 
 function retrySheet(id){
-
-  const s =
-    sheets.find(
-      x => x.id === id
-    );
-
-
-  if(
-    !s ||
-    !s._file
-  ){
-
-    return;
-
-  }
-
-
-  s.status =
-    'scanning';
-
-  s.error =
-    null;
-
-
+  const s = sheets.find(x => x.id === id);
+  if(!s || !s._file) return;
+  s.status = 'scanning'; s.error = null;
   render();
-
-
   (async () => {
-
     try{
-
-      const normalized =
-        await normalizeImage(
-          s._file
-        );
-
-
-      s.thumbUrl =
-        normalized.dataUrl;
-
-
-      const items =
-        await extractSheet(
-          normalized.base64,
-          normalized.mediaType
-        );
-
-
-      s.status =
-        'done';
-
-      s.items =
-        items;
-
-
+      const { base64, mediaType, dataUrl } = await normalizeImage(s._file);
+      s.thumbUrl = dataUrl;
+      const items = await extractSheet(base64, mediaType);
+      s.status = 'done'; s.items = items;
     }catch(err){
-
-      console.error(
-        'retrySheet error:',
-        err
-      );
-
-
-      s.status =
-        'error';
-
-      s.error =
-        err.message ||
-        'เกิดข้อผิดพลาด';
-
+      s.status = 'error'; s.error = err.message || 'เกิดข้อผิดพลาด';
     }
-
-
     render();
-
   })();
-
 }
-
-
-/*
-=========================================================
-HANDLE FILES
-=========================================================
-*/
 
 function handleFiles(fileList){
-
-  const files =
-    Array.from(fileList)
-      .filter(isLikelyImage);
-
-
-  files.forEach(
-    processFile
-  );
-
+  const files = Array.from(fileList).filter(isLikelyImage);
+  files.forEach(processFile);
 }
 
+fileInput.addEventListener('change', (e) => { handleFiles(e.target.files); fileInput.value = ''; });
 
-/*
-=========================================================
-FILE INPUT
-=========================================================
-*/
-
-fileInput.addEventListener(
-  'change',
-  (e) => {
-
-    handleFiles(
-      e.target.files
-    );
-
-    fileInput.value = '';
-
-  }
-);
-
-
-/*
-=========================================================
-DROPZONE CLICK
-=========================================================
-*/
-
-dropzone.addEventListener(
-  'click',
-  () => fileInput.click()
-);
-
-
-dropzone.addEventListener(
-  'keydown',
-  (e) => {
-
-    if(
-      e.key === 'Enter' ||
-      e.key === ' '
-    ){
-
-      e.preventDefault();
-
-      fileInput.click();
-
-    }
-
-  }
-);
-
-
-/*
-=========================================================
-DRAG
-=========================================================
-*/
-
-['dragenter','dragover']
-.forEach(evt => {
-
-  dropzone.addEventListener(
-    evt,
-    (e) => {
-
-      e.preventDefault();
-
-      dropzone.classList.add(
-        'drag'
-      );
-
-    }
-  );
-
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
 });
 
-
-['dragleave','drop']
-.forEach(evt => {
-
-  dropzone.addEventListener(
-    evt,
-    (e) => {
-
-      e.preventDefault();
-
-      dropzone.classList.remove(
-        'drag'
-      );
-
-    }
-  );
-
+['dragenter','dragover'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag'); });
 });
-
-
-dropzone.addEventListener(
-  'drop',
-  (e) => {
-
-    if(
-      e.dataTransfer &&
-      e.dataTransfer.files
-    ){
-
-      handleFiles(
-        e.dataTransfer.files
-      );
-
-    }
-
-  }
-);
-
-
-/*
-=========================================================
-SEARCH
-=========================================================
-*/
+['dragleave','drop'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); });
+});
+dropzone.addEventListener('drop', (e) => {
+  if(e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+});
 
 function runSearch(){
-
-  const q =
-    digitsOnly(
-      searchInput.value.trim()
-    );
-
-
+  const q = digitsOnly(searchInput.value.trim());
   resultsEl.innerHTML = '';
+  if(!q){ return; }
 
-
-  if(!q){
-
-    return;
-
-  }
-
-
-  const items =
-    allItems();
-
-
-  const matches =
-    items.filter(
-      it =>
-        digitsOnly(
-          it.tracking
-        ).includes(q)
-        ||
-        it.tracking.includes(
-          q.toUpperCase()
-        )
-    );
-
+  const items = allItems();
+  const matches = items.filter(it => digitsOnly(it.tracking).includes(q) || it.tracking.includes(q.toUpperCase()));
 
   if(matches.length === 0){
-
-    const div =
-      document.createElement(
-        'div'
-      );
-
-
-    div.className =
-      'no-results';
-
-
-    div.textContent =
-      'ไม่พบเลขพัสดุที่ตรงกับ "' +
-      searchInput.value.trim() +
-      '"';
-
-
-    resultsEl.appendChild(
-      div
-    );
-
-
+    const div = document.createElement('div');
+    div.className = 'no-results';
+    div.textContent = 'ไม่พบเลขพัสดุที่ตรงกับ "' + searchInput.value.trim() + '"';
+    resultsEl.appendChild(div);
     return;
-
   }
-
 
   for(const m of matches){
+    const row = document.createElement('div');
+    row.className = 'result-row';
 
-    const row =
-      document.createElement(
-        'div'
-      );
+    const badge = document.createElement('div');
+    badge.className = 'seq-badge';
+    badge.textContent = m.seq;
+    row.appendChild(badge);
 
+    const main = document.createElement('div');
+    main.className = 'result-main';
 
-    row.className =
-      'result-row';
+    const trackEl = document.createElement('div');
+    trackEl.className = 'tracking-no';
+    trackEl.innerHTML = highlightMatch(m.tracking, q);
+    main.appendChild(trackEl);
 
+    const src = document.createElement('div');
+    src.className = 'result-src';
+    src.textContent = 'จาก ' + m.sheetName;
+    main.appendChild(src);
 
-    const badge =
-      document.createElement(
-        'div'
-      );
-
-
-    badge.className =
-      'seq-badge';
-
-
-    badge.textContent =
-      m.seq;
-
-
-    row.appendChild(
-      badge
-    );
-
-
-    const main =
-      document.createElement(
-        'div'
-      );
-
-
-    main.className =
-      'result-main';
-
-
-    const trackEl =
-      document.createElement(
-        'div'
-      );
-
-
-    trackEl.className =
-      'tracking-no';
-
-
-    trackEl.innerHTML =
-      highlightMatch(
-        m.tracking,
-        q
-      );
-
-
-    main.appendChild(
-      trackEl
-    );
-
-
-    const src =
-      document.createElement(
-        'div'
-      );
-
-
-    src.className =
-      'result-src';
-
-
-    src.textContent =
-      'จาก ' +
-      m.sheetName;
-
-
-    main.appendChild(
-      src
-    );
-
-
-    row.appendChild(
-      main
-    );
-
-
-    resultsEl.appendChild(
-      row
-    );
-
+    row.appendChild(main);
+    resultsEl.appendChild(row);
   }
-
 }
 
-
-/*
-=========================================================
-HIGHLIGHT
-=========================================================
-*/
-
-function highlightMatch(
-  tracking,
-  query
-){
-
-  const idx =
-    tracking.indexOf(
-      query.toUpperCase()
-    );
-
-
-  if(idx === -1){
-
-    return escapeHtml(
-      tracking
-    );
-
-  }
-
-
-  const before =
-    tracking.slice(
-      0,
-      idx
-    );
-
-
-  const match =
-    tracking.slice(
-      idx,
-      idx + query.length
-    );
-
-
-  const after =
-    tracking.slice(
-      idx + query.length
-    );
-
-
-  return (
-    escapeHtml(before) +
-    '<mark>' +
-    escapeHtml(match) +
-    '</mark>' +
-    escapeHtml(after)
-  );
-
+function highlightMatch(tracking, query){
+  const idx = tracking.indexOf(query.toUpperCase());
+  if(idx === -1) return escapeHtml(tracking);
+  const before = tracking.slice(0, idx);
+  const match = tracking.slice(idx, idx + query.length);
+  const after = tracking.slice(idx + query.length);
+  return escapeHtml(before) + '<mark>' + escapeHtml(match) + '</mark>' + escapeHtml(after);
 }
-
-
-/*
-=========================================================
-ESCAPE HTML
-=========================================================
-*/
 
 function escapeHtml(s){
-
-  return s
-    .replace(
-      /&/g,
-      '&amp;'
-    )
-    .replace(
-      /</g,
-      '&lt;'
-    )
-    .replace(
-      />/g,
-      '&gt;'
-    );
-
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-
-/*
-=========================================================
-SEARCH EVENT
-=========================================================
-*/
-
-searchInput.addEventListener(
-  'input',
-  runSearch
-);
-
-
-/*
-=========================================================
-START
-=========================================================
-*/
+searchInput.addEventListener('input', runSearch);
 
 restore();
-
 render();
-
 </script>
-
 </body>
 </html>
