@@ -1,16 +1,10 @@
 export default async function handler(req, res) {
-  // ==============================
-  // ตรวจสอบ Method
-  // ==============================
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'Method Not Allowed'
     });
   }
 
-  // ==============================
-  // ตรวจสอบ API Key
-  // ==============================
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
@@ -28,71 +22,69 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================
-    // OpenRouter Vision Model
-    // ==============================
+    // ใช้ Free Router
     const MODEL = 'openrouter/free';
 
-    // ถ้า image มี data:image/... อยู่แล้ว
-    // จะใช้ 그대로
-    // ถ้าไม่มี จะสร้าง data URL ให้
+    // ทำให้เป็น Data URL ถ้ายังไม่ได้เป็น
     const imageDataUrl = image.startsWith('data:')
       ? image
       : `data:${mediaType || 'image/jpeg'};base64,${image}`;
 
-    // ==============================
-    // Prompt สำหรับอ่านเลขพัสดุ
-    // ==============================
     const prompt = `
-คุณเป็น AI สำหรับอ่านเลขพัสดุจากภาพถ่าย
+คุณเป็น AI สำหรับอ่านเลขพัสดุจากภาพ
 
-วิเคราะห์ภาพนี้อย่างละเอียด และหาเลขพัสดุที่มองเห็นทั้งหมด
+หน้าที่ของคุณคืออ่านข้อความบนฉลากพัสดุ
+และหา "เลขพัสดุไปรษณีย์ไทย" ที่มองเห็นในภาพ
 
-รูปแบบเลขพัสดุที่ต้องการคือ:
+รูปแบบที่ต้องการ:
+
 ตัวอักษรภาษาอังกฤษ 2 ตัว
-ตามด้วยตัวเลข 9 หลัก
-และลงท้ายด้วย TH
++
+ตัวเลข 9 หลัก
++
+TH
 
 ตัวอย่าง:
 EM123456789TH
 ED123456789TH
 RR123456789TH
-TH123456789TH
 
 กฎสำคัญ:
+
 1. อ่านจากภาพจริงเท่านั้น
-2. ห้ามเดาเลขที่มองไม่เห็น
-3. ถ้ามีหลายพัสดุ ให้แสดงทุกเลข
-4. ถ้าเลขบางตัวไม่ชัด ให้พยายามตรวจสอบจากบริบทของภาพ
-5. ตัดช่องว่างและเครื่องหมายที่ไม่เกี่ยวข้องออก
-6. เปลี่ยนตัวอักษรเป็นตัวพิมพ์ใหญ่
-7. ต้องตรวจสอบให้มีรูปแบบ 2 ตัวอักษร + 9 ตัวเลข + TH
-8. ถ้าอ่านเลขพัสดุไม่ได้ ให้ตอบ NONE
+2. ห้ามสร้างหรือเดาเลขที่มองไม่เห็น
+3. ถ้ามีหลายพัสดุ ให้หาให้ครบทุกเลข
+4. ตัวอักษรต้องเป็นภาษาอังกฤษ
+5. ตัวเลขต้องมี 9 หลัก
+6. ลงท้ายด้วย TH
+7. ใช้ตัวพิมพ์ใหญ่ทั้งหมด
+8. ไม่ต้องอธิบาย
+9. ไม่ต้องใส่ Markdown
+10. ไม่ต้องใส่หมายเลขลำดับ
+11. ให้ตอบเลขพัสดุทีละบรรทัดเท่านั้น
+12. ถ้าอ่านเลขพัสดุไม่ได้ ให้ตอบ NONE
 
-ตอบกลับในรูปแบบนี้เท่านั้น:
+ตัวอย่างคำตอบที่ถูกต้อง:
 
-1. EM123456789TH
-2. ED987654321TH
+EM123456789TH
+RR987654321TH
 
-หรือถ้าไม่พบเลขพัสดุ:
+ถ้าไม่พบเลขพัสดุ:
 
 NONE
 `;
 
-    // ==============================
-    // เรียก OpenRouter
-    // ==============================
     const response = await fetch(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         method: 'POST',
 
-headers: {
-  'Authorization': `Bearer ${apiKey}`,
-  'Content-Type': 'application/json',
-  'HTTP-Referer': 'https://parcel-tracker-mailing.vercel.app',
-  'X-Title': 'Parcel-Tracker'
-},
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer':
+            'https://parcel-tracker-mailing.vercel.app'
+        },
 
         body: JSON.stringify({
           model: MODEL,
@@ -106,6 +98,7 @@ headers: {
                   type: 'text',
                   text: prompt
                 },
+
                 {
                   type: 'image_url',
                   image_url: {
@@ -118,58 +111,135 @@ headers: {
 
           temperature: 0,
 
-          max_tokens: 500
+          max_tokens: 300
         })
       }
     );
 
-    // ==============================
-    // อ่าน Response
-    // ==============================
     const data = await response.json();
 
+    // ถ้า OpenRouter มี error
     if (!response.ok) {
-      console.error('OpenRouter Error:', data);
+      console.error(
+        'OpenRouter Error:',
+        JSON.stringify(data, null, 2)
+      );
 
       return res.status(response.status).json({
-        error: `OpenRouter API error (${response.status}): ${
-          data?.error?.message ||
-          JSON.stringify(data)
-        }`
+        error:
+          `OpenRouter API error (${response.status}): ` +
+          (
+            data?.error?.message ||
+            JSON.stringify(data)
+          )
       });
     }
 
-    const text =
-      data?.choices?.[0]?.message?.content || '';
+    // -----------------------------
+    // อ่าน response จาก AI
+    // -----------------------------
 
-    console.log('OpenRouter response:', text);
+    const rawContent =
+      data?.choices?.[0]?.message?.content;
 
-    // ==============================
-    // ถ้า AI บอกว่าไม่พบ
-    // ==============================
-    if (!text || text.trim().toUpperCase() === 'NONE') {
+    let text = '';
+
+    if (Array.isArray(rawContent)) {
+      text = rawContent
+        .map(part => part?.text || '')
+        .join('\n');
+    } else {
+      text = String(rawContent || '');
+    }
+
+    console.log(
+      'OpenRouter raw response:',
+      text
+    );
+
+    // -----------------------------
+    // ทำความสะอาดข้อความ
+    // -----------------------------
+
+    const cleaned = text
+      .toUpperCase()
+      .replace(/\r/g, '\n')
+      .replace(/[“”"'`*#()[\]{}<>]/g, ' ');
+
+    console.log(
+      'Cleaned response:',
+      cleaned
+    );
+
+    // -----------------------------
+    // หาเลขแบบปกติ
+    // รองรับ:
+    // EM123456789TH
+    // EM 123456789 TH
+    // EM-123456789-TH
+    // EM.123456789.TH
+    // -----------------------------
+
+    const matches = [];
+
+    const regex =
+      /\b([A-Z]{2})[\s\-._:/]*(\d{9})[\s\-._:/]*TH\b/gi;
+
+    for (const match of cleaned.matchAll(regex)) {
+      const tracking =
+        `${match[1]}${match[2]}TH`.toUpperCase();
+
+      matches.push(tracking);
+    }
+
+    // -----------------------------
+    // ลองหาอีกครั้งจากแต่ละบรรทัด
+    // เผื่อ AI ใส่ข้อความประกอบ
+    // -----------------------------
+
+    const lines = cleaned.split('\n');
+
+    for (const line of lines) {
+      const compactLine =
+        line.replace(/[^A-Z0-9]/g, '');
+
+      const lineMatches =
+        compactLine.match(
+          /[A-Z]{2}\d{9}TH/g
+        ) || [];
+
+      for (const tracking of lineMatches) {
+        matches.push(tracking);
+      }
+    }
+
+    // -----------------------------
+    // ลบเลขซ้ำ
+    // -----------------------------
+
+    const uniqueTracking = [
+      ...new Set(matches)
+    ];
+
+    console.log(
+      'Detected tracking numbers:',
+      uniqueTracking
+    );
+
+    // -----------------------------
+    // ไม่มีเลข
+    // -----------------------------
+
+    if (uniqueTracking.length === 0) {
       return res.status(200).json({
         items: []
       });
     }
 
-    // ==============================
-    // ดึงเลขพัสดุจากคำตอบ AI
-    // ==============================
-    const matches = text.match(
-      /\b[A-Z]{2}\d{9}TH\b/gi
-    ) || [];
+    // -----------------------------
+    // ส่งกลับ frontend
+    // -----------------------------
 
-    // ลบเลขซ้ำ
-    const uniqueTracking = [
-      ...new Set(
-        matches.map(x => x.toUpperCase())
-      )
-    ];
-
-    // ==============================
-    // สร้าง items ให้เหมือน API เดิม
-    // ==============================
     const items = uniqueTracking.map(
       (tracking, index) => ({
         seq: index + 1,
@@ -182,10 +252,15 @@ headers: {
     });
 
   } catch (error) {
-    console.error('Server Error:', error);
+    console.error(
+      'Server Error:',
+      error
+    );
 
     return res.status(500).json({
-      error: error.message || 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์'
+      error:
+        error.message ||
+        'เกิดข้อผิดพลาดในเซิร์ฟเวอร์'
     });
   }
 }
