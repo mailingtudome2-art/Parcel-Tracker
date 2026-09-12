@@ -1,185 +1,150 @@
 const MODEL = 'openrouter/free';
 
 const EXTRACTION_PROMPT = `
-You are an OCR assistant for Thai postal delivery manifests.
+You are an OCR assistant for Thai postal delivery manifests (บัญชีนำจ่าย ป.303).
 
-Read the parcel tracking numbers from the image.
+The image has been preprocessed for OCR. The original parcel table has FOUR vertical column groups.
+They may appear as a 2x2 layout in the image:
+- top-left = original column 1
+- top-right = original column 2
+- bottom-left = original column 3
+- bottom-right = original column 4
+
+Read EVERY numbered parcel entry visible in ALL FOUR groups.
+This particular type of sheet can contain 50-100+ entries. Do NOT stop after a few rows.
 
 IMPORTANT:
-- Read EVERY numbered parcel entry that is visible.
-- The sheet may contain 50-100+ parcel entries.
-- Do NOT stop after finding a few entries.
-- Ignore recipient names, addresses, phone numbers, prices, status text, dates, and other fields.
-- The tracking number normally has this format:
-  2 English letters + 9 digits + TH
+- The printed sequence number is the number at the beginning of each parcel entry.
+- Tracking numbers normally look like: 2 English letters + 9 digits + TH.
+- They may be printed with spaces, for example: WB 3689 9851 2 TH.
+- Remove all spaces and hyphens in the output.
+- Convert letters to uppercase.
+- Ignore recipient names, addresses, phone numbers, status text, prices, dates, and asterisks.
+- Ignore the NON-COD/header text outside the parcel table.
+- Read rows even when the recipient name touches the tracking number.
+- Completeness is more important than explaining anything.
 
-Examples:
+OUTPUT ONLY one line per parcel:
+sequence|tracking_number
+
+Example:
 1|WB368998512TH
 2|WB464939383TH
 3|WB462670430TH
-4|JG067450412TH
-
-Output ONLY:
-sequence|tracking_number
 
 Rules:
-- One parcel per line.
-- Keep the original sequence number.
-- Remove spaces and hyphens from tracking numbers.
-- Convert letters to uppercase.
-- Do not output markdown.
-- Do not output explanations.
-- Do not output a header.
-- Do not output extra text.
-- If a tracking number is slightly unclear, choose the most likely reading.
-- Try very hard to read all rows, including rows near the bottom of the table.
+- Keep the original printed sequence number.
+- Include the final TH.
+- No markdown.
+- No code fences.
+- No header.
+- No explanation.
+- No blank lines.
+- Do not combine multiple entries on one line.
+- Try to return all entries from 1 through the highest visible sequence number.
 `;
 
 function cleanText(text) {
   return String(text || '')
-    .replace(/```[\s\S]*?```/g, (block) =>
-      block
-        .replace(/```[a-zA-Z]*\n?/g, '')
-        .replace(/```/g, '')
-    )
-    .replace(/\r/g, '');
+    .replace(/\r/g, '')
+    .replace(/```(?:text|plaintext)?/gi, '')
+    .replace(/```/g, '');
 }
 
 function normalizeTracking(value) {
   if (!value) return null;
 
-  let s = String(value)
+  const s = String(value)
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '');
 
-  // Expected format: AA + 9 digits + TH
   const match = s.match(/^([A-Z]{2})(\d{9})TH$/);
-
   if (!match) return null;
 
   return `${match[1]}${match[2]}TH`;
 }
 
 function parseItems(text) {
+  const cleaned = cleanText(text);
   const items = [];
   const seenSeq = new Set();
   const seenTracking = new Set();
 
-  const cleaned = cleanText(text);
+  // Match a tracking number even when spaces/hyphens are present.
+  const trackingRegex = /\b([A-Z]{2})[\s\-]*(\d{4})[\s\-]*(\d{4})[\s\-]*(\d)[\s\-]*TH\b/gi;
 
-  // --------------------------------------------------
-  // Method 1:
-  // Parse explicit lines such as:
-  // 1|WB368998512TH
-  // 2. WB464939383TH
-  // 3: JG067450412TH
-  // --------------------------------------------------
-
-  const lines = cleaned.split('\n');
-
-  for (const rawLine of lines) {
+  // First pass: line-oriented parsing. This is the preferred path because
+  // the model was instructed to preserve the printed sequence number.
+  for (const rawLine of cleaned.split('\n')) {
     const line = rawLine.trim();
-
     if (!line) continue;
-
-    // Find sequence number at the beginning of the line
-    const seqMatch = line.match(
-      /^\s*(\d{1,3})\s*(?:[.|):\-]\s*|\|)\s*/
-    );
 
     let seq = null;
 
-    if (seqMatch) {
-      seq = Number(seqMatch[1]);
-    }
+    // Accept: 1|..., 1. ..., 1) ..., 1: ..., 1- ...
+    const startSeq = line.match(/^\s*(\d{1,3})\s*(?:[.|):\-]\s*|\|\s*)/);
+    if (startSeq) seq = Number(startSeq[1]);
 
-    // Find tracking number in the line
-    const trackingMatch = line.match(
-      /\b([A-Z]{2})[\s\-]*(\d{4})[\s\-]*(\d{4})[\s\-]*(\d)[\s\-]*TH\b/i
-    );
-
-    if (!trackingMatch) continue;
+    const match = line.match(trackingRegex);
+    if (!match) continue;
 
     const tracking = normalizeTracking(
-      `${trackingMatch[1]}${trackingMatch[2]}${trackingMatch[3]}${trackingMatch[4]}TH`
+      `${match[1]}${match[2]}${match[3]}${match[4]}TH`
     );
-
     if (!tracking) continue;
 
-    // If no sequence was detected at the beginning,
-    // try to find a number immediately before the tracking number.
+    // If the line did not start with a sequence number, look immediately
+    // before the tracking number for a printed sequence number.
     if (seq === null) {
-      const beforeTracking = line.slice(
-        0,
-        trackingMatch.index
-      );
-
-      const fallbackSeq = beforeTracking.match(
-        /(?:^|\s)(\d{1,3})\s*$/
-      );
-
-      if (fallbackSeq) {
-        seq = Number(fallbackSeq[1]);
-      }
+      const before = line.slice(0, match.index);
+      const fallback = before.match(/(?:^|\s)(\d{1,3})\s*$/);
+      if (fallback) seq = Number(fallback[1]);
     }
 
-    if (seq === null) continue;
-
-    if (seq < 1 || seq > 300) continue;
-
-    if (seenSeq.has(seq)) continue;
-    if (seenTracking.has(tracking)) continue;
+    if (seq === null || seq < 1 || seq > 300) continue;
+    if (seenSeq.has(seq) || seenTracking.has(tracking)) continue;
 
     seenSeq.add(seq);
     seenTracking.add(tracking);
-
-    items.push({
-      seq,
-      tracking
-    });
+    items.push({ seq, tracking });
   }
 
-  // --------------------------------------------------
-  // Method 2:
-  // If the model did not format the output correctly,
-  // scan the whole response for tracking numbers.
-  // --------------------------------------------------
-
-  if (items.length === 0) {
-    const regex =
-      /\b([A-Z]{2})[\s\-]*(\d{4})[\s\-]*(\d{4})[\s\-]*(\d)[\s\-]*TH\b/gi;
+  // Second pass: sometimes a vision model returns the sequence and tracking
+  // number with unusual punctuation or puts several values on one line.
+  // Search for tracking numbers and infer a sequence from nearby text when
+  // possible. If no sequence can be recovered, use the next available number.
+  if (items.length < 1) {
+    trackingRegex.lastIndex = 0;
 
     let match;
-
-    while ((match = regex.exec(cleaned)) !== null) {
+    while ((match = trackingRegex.exec(cleaned)) !== null) {
       const tracking = normalizeTracking(
         `${match[1]}${match[2]}${match[3]}${match[4]}TH`
       );
+      if (!tracking || seenTracking.has(tracking)) continue;
 
-      if (!tracking) continue;
+      const before = cleaned.slice(Math.max(0, match.index - 30), match.index);
+      const seqMatch = before.match(/(?:^|\D)(\d{1,3})\s*$/);
+      let seq = seqMatch ? Number(seqMatch[1]) : null;
 
-      if (seenTracking.has(tracking)) continue;
+      if (seq === null || seq < 1 || seq > 300 || seenSeq.has(seq)) {
+        seq = 1;
+        while (seenSeq.has(seq)) seq++;
+      }
 
+      seenSeq.add(seq);
       seenTracking.add(tracking);
-
-      items.push({
-        seq: items.length + 1,
-        tracking
-      });
+      items.push({ seq, tracking });
     }
   }
 
-  // Sort by sequence number
   items.sort((a, b) => a.seq - b.seq);
-
   return items;
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'Method not allowed'
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -191,7 +156,16 @@ export default async function handler(req, res) {
       });
     }
 
-    const { image, mediaType } = req.body || {};
+    let body = req.body || {};
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        body = {};
+      }
+    }
+
+    const { image, mediaType } = body;
 
     if (!image) {
       return res.status(400).json({
@@ -199,189 +173,100 @@ export default async function handler(req, res) {
       });
     }
 
-    const finalMediaType =
-      mediaType || 'image/jpeg';
+    const finalMediaType = mediaType || 'image/jpeg';
 
-    // --------------------------------------------------
-    // 30-second timeout
-    // Prevent the app from waiting forever if the
-    // selected free provider is slow or stuck.
-    // --------------------------------------------------
-
+    // Stop waiting if the selected free provider is too slow.
     const controller = new AbortController();
-
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 30000);
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
     let response;
 
     try {
-      response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`
-          },
-
-          body: JSON.stringify({
-            model: MODEL,
-
-            messages: [
+      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [{
+            role: 'user',
+            content: [
               {
-                role: 'user',
-
-                content: [
-                  {
-                    type: 'text',
-                    text: EXTRACTION_PROMPT
-                  },
-
-                  {
-                    type: 'image_url',
-
-                    image_url: {
-                      url: `data:${finalMediaType};base64,${image}`
-                    }
-                  }
-                ]
+                type: 'text',
+                text: EXTRACTION_PROMPT
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${finalMediaType};base64,${image}`
+                }
               }
-            ],
-
-            temperature: 0,
-
-            // Reduced from 6000.
-            // 2500 is enough for roughly 100+ OCR lines
-            // while limiting unnecessarily long generation.
-            max_tokens: 2500
-          }),
-
-          signal: controller.signal
-        }
-      );
+            ]
+          }],
+          temperature: 0,
+          max_tokens: 2500
+        }),
+        signal: controller.signal
+      });
     } finally {
       clearTimeout(timeout);
-    }
-
-    // --------------------------------------------------
-    // Handle timeout
-    // --------------------------------------------------
-
-    if (!response) {
-      return res.status(504).json({
-        error: 'OCR request timed out'
-      });
     }
 
     const responseText = await response.text();
 
     if (!response.ok) {
-      console.error(
-        'OpenRouter error:',
-        response.status,
-        responseText
-      );
-
+      console.error('OpenRouter error:', response.status, responseText);
       return res.status(response.status).json({
         error: 'OpenRouter request failed',
-        details: responseText
+        details: responseText.slice(0, 500)
       });
     }
 
     let data;
-
     try {
       data = JSON.parse(responseText);
-    } catch (err) {
-      console.error(
-        'Invalid OpenRouter JSON:',
-        responseText
-      );
-
+    } catch {
+      console.error('Invalid OpenRouter JSON:', responseText);
       return res.status(502).json({
         error: 'Invalid response from OpenRouter'
       });
     }
 
-    // --------------------------------------------------
-    // Extract model output
-    // --------------------------------------------------
+    let content = data?.choices?.[0]?.message?.content || '';
 
-    let content =
-      data?.choices?.[0]?.message?.content || '';
-
-    // Some providers may return content as an array.
     if (Array.isArray(content)) {
-      content = content
-        .map(part => {
-          if (typeof part === 'string') {
-            return part;
-          }
-
-          if (part?.text) {
-            return part.text;
-          }
-
-          return '';
-        })
-        .join('\n');
+      content = content.map(part => {
+        if (typeof part === 'string') return part;
+        return part?.text || '';
+      }).join('\n');
     }
 
     content = String(content || '');
 
-    console.log(
-      'OpenRouter model:',
-      data?.model || MODEL
-    );
-
-    console.log(
-      'OCR raw output:',
-      content.slice(0, 5000)
-    );
-
-    // --------------------------------------------------
-    // Parse tracking numbers
-    // --------------------------------------------------
+    console.log('OpenRouter model:', data?.model || MODEL);
+    console.log('OCR output length:', content.length);
 
     const items = parseItems(content);
 
-    console.log(
-      'OCR parsed items:',
-      items.length
-    );
-
-    if (items.length === 0) {
-      return res.status(200).json({
-        items: [],
-        raw: content
-      });
-    }
+    console.log('OCR parsed items:', items.length);
 
     return res.status(200).json({
       items
     });
 
   } catch (error) {
+    console.error('extract.js error:', error);
 
-    console.error(
-      'extract.js error:',
-      error
-    );
-
-    // AbortController timeout
     if (error?.name === 'AbortError') {
       return res.status(504).json({
-        error: 'OCR ใช้เวลานานเกิน 30 วินาที'
+        error: 'OCR ใช้เวลานานเกิน 30 วินาที กรุณาลองใหม่'
       });
     }
 
     return res.status(500).json({
-      error:
-        error?.message ||
-        'OCR processing failed'
+      error: error?.message || 'OCR processing failed'
     });
   }
 }
