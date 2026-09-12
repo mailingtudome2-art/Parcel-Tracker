@@ -87,14 +87,12 @@ NONE
       {
         method: 'POST',
 
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-
-          // ใส่ไว้สำหรับ OpenRouter
-          'HTTP-Referer': 'https://parcel-tracker-mailing.vercel.app',
-          'X-Title': 'ป.303 SCANNER'
-        },
+headers: {
+  'Authorization': `Bearer ${apiKey}`,
+  'Content-Type': 'application/json',
+  'HTTP-Referer': 'https://parcel-tracker-mailing.vercel.app',
+  'X-Title': 'Parcel-Tracker'
+},
 
         body: JSON.stringify({
           model: MODEL,
