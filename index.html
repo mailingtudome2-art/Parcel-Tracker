@@ -305,7 +305,36 @@
 
 
     /* =========================
-       RESULTS
+       SEARCH
+    ========================= */
+
+    .search-box {
+      width: 100%;
+
+      height: 68px;
+
+      border: 2px solid #d4d9df;
+
+      border-radius: 20px;
+
+      padding: 0 24px;
+
+      font-size: 26px;
+
+      outline: none;
+
+      color: #243044;
+
+      margin-bottom: 24px;
+    }
+
+    .search-box:focus {
+      border-color: #51b77e;
+    }
+
+
+    /* =========================
+       RESULT COUNT
     ========================= */
 
     .result-count {
@@ -315,6 +344,11 @@
 
       margin-bottom: 17px;
     }
+
+
+    /* =========================
+       RESULT
+    ========================= */
 
     .result-item {
       background: white;
@@ -349,11 +383,11 @@
     }
 
     /*
-      ลดขนาดตัวหนังสือเลขพัสดุ
+      ลดขนาดเลขพัสดุลงเล็กน้อย
     */
 
     .result-tracking {
-      font-size: 24px;
+      font-size: 23px;
 
       font-weight: 700;
 
@@ -363,6 +397,22 @@
 
       word-break: break-all;
     }
+
+
+    /* =========================
+       HIGHLIGHT
+    ========================= */
+
+    .highlight {
+      background: #fff200;
+
+      color: #111;
+
+      padding: 0 2px;
+
+      border-radius: 2px;
+    }
+
 
     .empty {
       text-align: center;
@@ -435,6 +485,14 @@
 
       .stat-value {
         font-size: 39px;
+      }
+
+      .search-box {
+        height: 64px;
+
+        font-size: 23px;
+
+        margin-bottom: 22px;
       }
 
       .result-item {
@@ -570,7 +628,7 @@
         id="progressText"
         class="progress-text"
       >
-        กำลังเตรียมรูปภาพ...
+        กำลังเตรียมภาพ...
       </div>
 
 
@@ -643,6 +701,23 @@
     </div>
 
 
+    <!-- =================================================
+         SEARCH INPUT
+
+         ไม่มีปุ่มค้นหา
+         พิมพ์แล้วค้นหาอัตโนมัติ
+    ================================================== -->
+
+    <input
+      id="searchInput"
+      class="search-box"
+      type="text"
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder="พิมพ์เลขพัสดุเพื่อค้นหา"
+    >
+
+
     <!-- RESULT COUNT -->
 
     <div
@@ -691,40 +766,69 @@ const MAX_ITEMS = 100;
 ========================================================= */
 
 const fileInput =
-  document.getElementById('fileInput');
+  document.getElementById(
+    'fileInput'
+  );
 
 const preview =
-  document.getElementById('preview');
+  document.getElementById(
+    'preview'
+  );
 
 const uploadContent =
-  document.getElementById('uploadContent');
+  document.getElementById(
+    'uploadContent'
+  );
 
 const readButton =
-  document.getElementById('readButton');
+  document.getElementById(
+    'readButton'
+  );
 
 const clearButton =
-  document.getElementById('clearButton');
+  document.getElementById(
+    'clearButton'
+  );
 
 const progressWrap =
-  document.getElementById('progressWrap');
+  document.getElementById(
+    'progressWrap'
+  );
 
 const progressText =
-  document.getElementById('progressText');
+  document.getElementById(
+    'progressText'
+  );
 
 const progressBar =
-  document.getElementById('progressBar');
+  document.getElementById(
+    'progressBar'
+  );
 
 const status =
-  document.getElementById('status');
+  document.getElementById(
+    'status'
+  );
 
 const countValue =
-  document.getElementById('countValue');
+  document.getElementById(
+    'countValue'
+  );
+
+const searchInput =
+  document.getElementById(
+    'searchInput'
+  );
 
 const resultCount =
-  document.getElementById('resultCount');
+  document.getElementById(
+    'resultCount'
+  );
 
 const results =
-  document.getElementById('results');
+  document.getElementById(
+    'results'
+  );
 
 
 
@@ -751,7 +855,9 @@ fileInput.addEventListener(
 
 
     const url =
-      URL.createObjectURL(file);
+      URL.createObjectURL(
+        file
+      );
 
 
     preview.src =
@@ -834,6 +940,10 @@ clearButton.addEventListener(
       'ยังไม่มีข้อมูล';
 
 
+    searchInput.value =
+      '';
+
+
     results.innerHTML =
       '<div class="empty">ผลการอ่านจะแสดงที่นี่</div>';
 
@@ -884,7 +994,9 @@ function loadImage(file){
 
 
       img.src =
-        URL.createObjectURL(file);
+        URL.createObjectURL(
+          file
+        );
 
     }
   );
@@ -896,31 +1008,22 @@ function loadImage(file){
 /* =========================================================
    NORMALIZE IMAGE
 
-   รองรับสูงสุด 100 รายการ
+   รองรับสูงสุด 100
 
-   แบ่งเป็น 4 คอลัมน์
-
-   Column 1:
-   1,5,9,...97
-
-   Column 2:
-   2,6,10,...98
-
-   Column 3:
-   3,7,11,...99
-
-   Column 4:
-   4,8,12,...100
+   แบ่ง 4 คอลัมน์
 ========================================================= */
 
 async function normalizeImage(file){
 
   const img =
-    await loadImage(file);
+    await loadImage(
+      file
+    );
 
 
   const srcW =
     img.naturalWidth;
+
 
   const srcH =
     img.naturalHeight;
@@ -929,8 +1032,8 @@ async function normalizeImage(file){
   /*
     พื้นที่ตาราง
 
-    ขยายจากเวอร์ชันก่อน
-    เพื่อไม่ให้แถวบน/ล่างถูกตัด
+    ขยายแนวตั้งเพื่อไม่ให้
+    แถวล่างหาย
   */
 
   const cropX =
@@ -956,8 +1059,6 @@ async function normalizeImage(file){
       srcH * 0.635
     );
 
-
-  /* ป้องกัน crop เกินรูป */
 
   const safeX =
     Math.max(
@@ -993,10 +1094,6 @@ async function normalizeImage(file){
     );
 
 
-  /*
-    ช่องว่างระหว่างคอลัมน์
-  */
-
   const colGap =
     Math.max(
       2,
@@ -1015,10 +1112,6 @@ async function normalizeImage(file){
     );
 
 
-  /*
-    ขยายภาพ 2 เท่า
-  */
-
   const scale =
     2.0;
 
@@ -1026,10 +1119,6 @@ async function normalizeImage(file){
   const images =
     [];
 
-
-  /*
-    สร้างภาพ 4 คอลัมน์
-  */
 
   for(
     let columnIndex = 0;
@@ -1058,36 +1147,32 @@ async function normalizeImage(file){
       safeH;
 
 
-    const outputCanvas =
+    const canvas =
       document.createElement(
         'canvas'
       );
 
 
-    outputCanvas.width =
+    canvas.width =
       Math.round(
         sw * scale
       );
 
 
-    outputCanvas.height =
+    canvas.height =
       Math.round(
         sh * scale
       );
 
 
     const ctx =
-      outputCanvas.getContext(
+      canvas.getContext(
         '2d',
         {
           alpha: false
         }
       );
 
-
-    /*
-      พื้นหลังขาว
-    */
 
     ctx.fillStyle =
       '#ffffff';
@@ -1096,8 +1181,8 @@ async function normalizeImage(file){
     ctx.fillRect(
       0,
       0,
-      outputCanvas.width,
-      outputCanvas.height
+      canvas.width,
+      canvas.height
     );
 
 
@@ -1119,18 +1204,13 @@ async function normalizeImage(file){
 
       0,
       0,
-
-      outputCanvas.width,
-      outputCanvas.height
+      canvas.width,
+      canvas.height
     );
 
 
-    /*
-      JPEG 0.68
-    */
-
     const dataUrl =
-      outputCanvas.toDataURL(
+      canvas.toDataURL(
         'image/jpeg',
         0.68
       );
@@ -1157,7 +1237,7 @@ async function normalizeImage(file){
 
 
 /* =========================================================
-   EXTRACT ONE COLUMN
+   EXTRACT COLUMN
 ========================================================= */
 
 async function extractColumn(
@@ -1340,7 +1420,9 @@ function normalizeItem(item){
 
 
   if(
-    !Number.isFinite(seq)
+    !Number.isFinite(
+      seq
+    )
   ){
 
     return null;
@@ -1364,19 +1446,15 @@ function normalizeItem(item){
 
 
   tracking =
-    String(tracking)
+    String(
+      tracking
+    )
       .toUpperCase()
       .replace(
         /[\s-]/g,
         ''
       );
 
-
-  /*
-    ต้องเป็น
-
-    XX123456789TH
-  */
 
   const match =
     tracking.match(
@@ -1393,7 +1471,8 @@ function normalizeItem(item){
 
   return {
 
-    seq: seq,
+    seq:
+      seq,
 
     tracking:
       match[1] +
@@ -1407,7 +1486,7 @@ function normalizeItem(item){
 
 
 /* =========================================================
-   COMBINE ITEMS
+   COMBINE
 ========================================================= */
 
 function combineItems(all){
@@ -1513,10 +1592,8 @@ async function readSheet(){
 
 
   /*
-    อ่านทีละคอลัมน์
-
-    เพื่อไม่ยิง Gemini
-    พร้อมกัน 4 ครั้ง
+    อ่าน 4 คอลัมน์
+    ทีละคอลัมน์
   */
 
   for(
@@ -1555,7 +1632,7 @@ async function readSheet(){
 
 
     /*
-      รวมผลระหว่างทาง
+      รวมข้อมูล
     */
 
     currentItems =
@@ -1565,11 +1642,20 @@ async function readSheet(){
 
 
     /*
-      แสดงจำนวนที่อ่านได้ทันที
+      จำนวนที่อ่านได้จริง
     */
 
     countValue.textContent =
       currentItems.length;
+
+
+    /*
+      แสดงรายการระหว่างอ่าน
+    */
+
+    renderResults(
+      currentItems
+    );
 
 
     progressBar.style.width =
@@ -1579,7 +1665,7 @@ async function readSheet(){
 
 
   /*
-    รวมผลสุดท้าย
+    รวมสุดท้าย
   */
 
   currentItems =
@@ -1589,63 +1675,17 @@ async function readSheet(){
 
 
   /*
-    =====================================================
-    สำคัญ
+    จำนวนที่อ่านได้จริง
 
-    ถ้าอ่านเจอ sequence สูงสุด 82
-    ให้จำนวนแสดงเป็น 82
+    ถ้าอ่านได้ 82 รายการ
+    ต้องแสดง 82
 
-    เช่น:
-    #1
-    #2
-    #3
-    ...
-    #82
-
-    จำนวน = 82
-    =====================================================
+    ไม่ใช้ max sequence
   */
 
-  let displayCount =
+  countValue.textContent =
     currentItems.length;
 
-
-  if(
-    currentItems.length > 0
-  ){
-
-    const maxSequence =
-      Math.max(
-        ...currentItems.map(
-          item => item.seq
-        )
-      );
-
-
-    /*
-      ใช้ sequence สูงสุด
-      เป็นจำนวนที่แสดง
-
-      เช่น อ่านได้ถึง #82
-      จะขึ้น 82
-    */
-
-    if(
-      maxSequence >
-      displayCount
-    ){
-
-      displayCount =
-        maxSequence;
-
-    }
-
-  }
-
-
-  /*
-    จบ
-  */
 
   progressBar.style.width =
     '100%';
@@ -1655,13 +1695,13 @@ async function readSheet(){
     'อ่านเสร็จแล้ว';
 
 
-  countValue.textContent =
-    displayCount;
-
-
   resultCount.textContent =
-    `อ่านได้ถึงลำดับ ${displayCount}`;
+    `ทั้งหมด ${currentItems.length} รายการ`;
 
+
+  /*
+    แสดงทั้งหมด
+  */
 
   renderResults(
     currentItems
@@ -1677,7 +1717,7 @@ async function readSheet(){
 
 
   status.textContent =
-    `อ่านเสร็จแล้ว พบ ${displayCount} รายการ`;
+    `อ่านเสร็จแล้ว พบ ${currentItems.length} รายการ`;
 
 }
 
@@ -1779,13 +1819,132 @@ function escapeHtml(value){
 
 
 /* =========================================================
-   RENDER RESULTS
+   HIGHLIGHT SEARCH
 
-   เรียงตาม sequence อัตโนมัติ
+   เช่นพิมพ์:
+
+   4914
+
+   JG082049144TH
+
+   จะ highlight:
+
+   JG0820[4914]4TH
+========================================================= */
+
+function highlightMatch(
+  tracking,
+  query
+){
+
+  const text =
+    String(
+      tracking || ''
+    );
+
+
+  const q =
+    String(
+      query || ''
+    )
+      .trim()
+      .toUpperCase();
+
+
+  if(!q){
+
+    return escapeHtml(
+      text
+    );
+
+  }
+
+
+  /*
+    ถ้าพิมพ์ตัวเลข
+  */
+
+  if(
+    /^\d+$/.test(q)
+  ){
+
+    const escaped =
+      escapeHtml(
+        text
+      );
+
+
+    const regex =
+      new RegExp(
+        q,
+        'g'
+      );
+
+
+    return escaped.replace(
+      regex,
+      '<span class="highlight">$&</span>'
+    );
+
+  }
+
+
+  /*
+    ถ้าค้น tracking เต็ม
+  */
+
+  const escaped =
+    escapeHtml(
+      text
+    );
+
+
+  const index =
+    escaped
+      .toUpperCase()
+      .indexOf(
+        q
+      );
+
+
+  if(index === -1){
+
+    return escaped;
+
+  }
+
+
+  return (
+    escaped.slice(
+      0,
+      index
+    ) +
+
+    '<span class="highlight">' +
+
+    escaped.slice(
+      index,
+      index + q.length
+    ) +
+
+    '</span>' +
+
+    escaped.slice(
+      index + q.length
+    )
+  );
+
+}
+
+
+
+/* =========================================================
+   RENDER RESULTS
 ========================================================= */
 
 function renderResults(
-  items
+  items,
+  query = ''
 ){
 
   if(!items.length){
@@ -1799,7 +1958,7 @@ function renderResults(
 
 
   /*
-    เรียง 1 → 100
+    เรียงลำดับ 1 → 100
   */
 
   const sorted =
@@ -1824,8 +1983,9 @@ function renderResults(
               </div>
 
               <div class="result-tracking">
-                ${escapeHtml(
-                  item.tracking
+                ${highlightMatch(
+                  item.tracking,
+                  query
                 )}
               </div>
 
@@ -1837,6 +1997,142 @@ function renderResults(
       .join('');
 
 }
+
+
+
+/* =========================================================
+   AUTO SEARCH
+
+   จุดสำคัญ:
+
+   ไม่ต้องกดปุ่มค้นหา
+
+   พิมพ์:
+   4
+   49
+   491
+   4914
+
+   ระบบค้นหาให้ทันที
+========================================================= */
+
+searchInput.addEventListener(
+  'input',
+  function(){
+
+    const query =
+      this.value.trim();
+
+
+    /*
+      ถ้าไม่พิมพ์อะไร
+      แสดงทั้งหมด
+    */
+
+    if(!query){
+
+      resultCount.textContent =
+        `ทั้งหมด ${currentItems.length} รายการ`;
+
+
+      renderResults(
+        currentItems
+      );
+
+
+      return;
+
+    }
+
+
+    const qUpper =
+      query.toUpperCase();
+
+
+    const qDigits =
+      query.replace(
+        /\D/g,
+        ''
+      );
+
+
+    const filtered =
+      currentItems.filter(
+        item => {
+
+          const tracking =
+            String(
+              item.tracking || ''
+            ).toUpperCase();
+
+
+          /*
+            ค้นแบบตัวอักษร/เลขเต็ม
+          */
+
+          if(
+            tracking.includes(
+              qUpper
+            )
+          ){
+
+            return true;
+
+          }
+
+
+          /*
+            ค้นเฉพาะตัวเลข
+
+            4914
+            จะเจอ
+
+            JG082049144TH
+          */
+
+          if(
+            qDigits &&
+            tracking
+              .replace(
+                /\D/g,
+                ''
+              )
+              .includes(
+                qDigits
+              )
+          ){
+
+            return true;
+
+          }
+
+
+          return false;
+
+        }
+      );
+
+
+    /*
+      แสดงจำนวนผลค้นหา
+    */
+
+    resultCount.textContent =
+      `พบ ${filtered.length} รายการ`;
+
+
+    /*
+      แสดงเฉพาะรายการที่ค้นเจอ
+    */
+
+    renderResults(
+      filtered,
+      query
+    );
+
+  }
+);
+
 
 
 </script>
