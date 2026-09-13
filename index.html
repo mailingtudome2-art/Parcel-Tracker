@@ -1,1177 +1,682 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>ป.303 SCANNER</title>
-
-
-  <style>
-
-    * {
-      box-sizing: border-box;
-    }
-
-
-    body {
-
-      margin: 0;
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Arial,
-        sans-serif;
-
-      background: #f1f8f4;
-
-      color: #243044;
-
-    }
-
-
-    .container {
-
-      max-width: 900px;
-
-      margin: 0 auto;
-
-      padding: 28px 18px 50px;
-
-    }
-
-
-    .card {
-
-      background: #ffffff;
-
-      border-radius: 30px;
-
-      padding: 34px;
-
-      margin-bottom: 24px;
-
-      box-shadow:
-        0 8px 30px rgba(0, 80, 40, 0.08);
-
-    }
-
-
-    /* =====================================================
-       TITLE
-    ===================================================== */
-
-    .title {
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 12px;
-
-      font-size: 40px;
-
-      font-weight: 800;
-
-      color: #13864b;
-
-      margin-bottom: 18px;
-
-    }
-
-
-    .title-icon {
-
-      font-size: 40px;
-
-    }
-
-
-    .subtitle {
-
-      font-size: 23px;
-
-      color: #737d8d;
-
-      margin-bottom: 26px;
-
-      line-height: 1.5;
-
-    }
-
-
-    /* =====================================================
-       UPLOAD
-    ===================================================== */
-
-    .upload-area {
-
-      border: 3px dashed #67c797;
-
-      background: #f4fff9;
-
-      border-radius: 22px;
-
-      min-height: 210px;
-
-      display: flex;
-
-      flex-direction: column;
-
-      align-items: center;
-
-      justify-content: center;
-
-      text-align: center;
-
-      cursor: pointer;
-
-      transition: 0.2s;
-
-      overflow: hidden;
-
-      position: relative;
-
-    }
-
-
-    .upload-area:hover {
-
-      background: #ecfff5;
-
-    }
-
-
-    .upload-icon {
-
-      font-size: 54px;
-
-      margin-bottom: 8px;
-
-    }
-
-
-    .upload-title {
-
-      font-size: 28px;
-
-      font-weight: 700;
-
-      color: #16864c;
-
-    }
-
-
-    .upload-subtitle {
-
-      margin-top: 7px;
-
-      font-size: 20px;
-
-      color: #747d8c;
-
-    }
-
-
-    #fileInput {
-
-      display: none;
-
-    }
-
-
-    #preview {
-
-      max-width: 100%;
-
-      max-height: 300px;
-
-      display: none;
-
-      border-radius: 14px;
-
-      object-fit: contain;
-
-    }
-
-
-    /* =====================================================
-       BUTTONS
-    ===================================================== */
-
-    .buttons {
-
-      display: flex;
-
-      gap: 18px;
-
-      margin-top: 26px;
-
-    }
-
-
-    button {
-
-      border: 0;
-
-      border-radius: 18px;
-
-      padding: 17px 28px;
-
-      font-size: 23px;
-
-      font-weight: 700;
-
-      cursor: pointer;
-
-      transition: 0.15s;
-
-    }
-
-
-    button:active {
-
-      transform: scale(0.98);
-
-    }
-
-
-    .btn-primary {
-
-      flex: 1;
-
-      background: #128247;
-
-      color: white;
-
-    }
-
-
-    .btn-primary:disabled {
-
-      background: #9bcfb4;
-
-      cursor: not-allowed;
-
-    }
-
-
-    .btn-secondary {
-
-      background: #e6f5ec;
-
-      color: #14834a;
-
-      min-width: 180px;
-
-    }
-
-
-    /* =====================================================
-       PROGRESS
-    ===================================================== */
-
-    .progress-wrap {
-
-      display: none;
-
-      margin-top: 24px;
-
-    }
-
-
-    .progress-text {
-
-      font-size: 19px;
-
-      color: #16864c;
-
-      margin-bottom: 10px;
-
-      font-weight: 600;
-
-    }
-
-
-    .progress-bg {
-
-      height: 15px;
-
-      background: #e5eee9;
-
-      border-radius: 20px;
-
-      overflow: hidden;
-
-    }
-
-
-    .progress-bar {
-
-      width: 0%;
-
-      height: 100%;
-
-      background: #15904f;
-
-      border-radius: 20px;
-
-      transition: width 0.25s;
-
-    }
-
-
-    /* =====================================================
-       STATUS
-    ===================================================== */
-
-    .status {
-
-      margin-top: 22px;
-
-      padding: 19px 23px;
-
-      border-radius: 18px;
-
-      background: #effcf4;
-
-      color: #176d43;
-
-      font-size: 23px;
-
-      line-height: 1.5;
-
-    }
-
-
-    .status.error {
-
-      background: #fff0f0;
-
-      color: #c53030;
-
-    }
-
-
-    /* =====================================================
-       STATS
-    ===================================================== */
-
-    .stats {
-
-      display: grid;
-
-      grid-template-columns: 1fr 1fr;
-
-      gap: 22px;
-
-      margin-bottom: 25px;
-
-    }
-
-
-    .stat {
-
-      border: 2px solid #d6eee0;
-
-      background: #f6fff9;
-
-      border-radius: 22px;
-
-      padding: 25px;
-
-    }
-
-
-    .stat-label {
-
-      color: #778193;
-
-      font-size: 20px;
-
-      margin-bottom: 7px;
-
-    }
-
-
-    .stat-value {
-
-      color: #15874d;
-
-      font-size: 46px;
-
-      font-weight: 800;
-
-    }
-
-
-    /* =====================================================
-       SEARCH
-
-       ช่องค้นหายังอยู่
-       แต่ไม่มีปุ่มค้นหา
-       พิมพ์แล้วค้นหาอัตโนมัติ
-    ===================================================== */
-
-    .search-box {
-
-      width: 100%;
-
-      height: 68px;
-
-      border: 2px solid #d4d9df;
-
-      border-radius: 20px;
-
-      padding: 0 24px;
-
-      font-size: 26px;
-
-      outline: none;
-
-      color: #243044;
-
-      margin-bottom: 24px;
-
-    }
-
-
-    .search-box:focus {
-
-      border-color: #51b77e;
-
-    }
-
-
-    /* =====================================================
-       RESULT COUNT
-    ===================================================== */
-
-    .result-count {
-
-      font-size: 21px;
-
-      color: #737d8d;
-
-      margin-bottom: 17px;
-
-    }
-
-
-    /* =====================================================
-       RESULT
-    ===================================================== */
-
-    .result-item {
-
-      background: white;
-
-      border: 2px solid #e4e8ed;
-
-      border-radius: 18px;
-
-      padding: 15px 20px;
-
-      margin-bottom: 11px;
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 15px;
-
-      overflow: hidden;
-
-    }
-
-
-    .result-seq {
-
-      color: #16864c;
-
-      font-size: 24px;
-
-      font-weight: 800;
-
-      min-width: 70px;
-
-      flex-shrink: 0;
-
-    }
-
-
-    /*
-      ลดขนาดตัวหนังสือเลขพัสดุลงเล็กน้อย
-    */
-
-    .result-tracking {
-
-      font-size: 23px;
-
-      font-weight: 700;
-
-      color: #202938;
-
-      letter-spacing: 0.3px;
-
-      word-break: break-all;
-
-    }
-
-
-    /* =====================================================
-       HIGHLIGHT
-    ===================================================== */
-
-    .highlight {
-
-      background: #fff200;
-
-      color: #111;
-
-      padding: 0 2px;
-
-      border-radius: 2px;
-
-    }
-
-
-    .empty {
-
-      text-align: center;
-
-      color: #89919e;
-
-      font-size: 20px;
-
-      padding: 30px 10px;
-
-    }
-
-
-    /* =====================================================
-       MOBILE
-    ===================================================== */
-
-    @media (max-width: 600px) {
-
-      .container {
-
-        padding: 18px 12px 40px;
-
-      }
-
-
-      .card {
-
-        padding: 22px 18px;
-
-        border-radius: 25px;
-
-      }
-
-
-      .title {
-
-        font-size: 32px;
-
-      }
-
-
-      .title-icon {
-
-        font-size: 34px;
-
-      }
-
-
-      .subtitle {
-
-        font-size: 19px;
-
-      }
-
-
-      .upload-title {
-
-        font-size: 25px;
-
-      }
-
-
-      .upload-subtitle {
-
-        font-size: 18px;
-
-      }
-
-
-      .buttons {
-
-        gap: 12px;
-
-      }
-
-
-      button {
-
-        font-size: 20px;
-
-        padding: 15px 14px;
-
-      }
-
-
-      .stats {
-
-        gap: 12px;
-
-      }
-
-
-      .stat {
-
-        padding: 19px 15px;
-
-      }
-
-
-      .stat-label {
-
-        font-size: 17px;
-
-      }
-
-
-      .stat-value {
-
-        font-size: 39px;
-
-      }
-
-
-      .search-box {
-
-        height: 64px;
-
-        font-size: 23px;
-
-        margin-bottom: 22px;
-
-      }
-
-
-      .result-item {
-
-        padding: 13px 15px;
-
-        gap: 8px;
-
-      }
-
-
-      .result-seq {
-
-        min-width: 58px;
-
-        font-size: 21px;
-
-      }
-
-
-      .result-tracking {
-
-        font-size: 21px;
-
-      }
-
-
-      .result-count {
-
-        font-size: 19px;
-
-      }
-
-    }
-
-  </style>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ป.303 SCANNER</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, "Noto Sans Thai", sans-serif;
+  background: #f4fbf6;
+  color: #173b2a;
+}
+
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #d7eadc;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.05);
+  margin-bottom: 16px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  color: #138a4b;
+}
+
+.sub {
+  color: #557363;
+  margin-bottom: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#readBtn {
+  background: #138a4b;
+  color: white;
+}
+
+#clearBtn {
+  background: #e8f4ec;
+  color: #17663a;
+}
+
+button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+input[type="file"] {
+  width: 100%;
+}
+
+.search {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #c9dfcf;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+}
+
+.progress {
+  height: 12px;
+  background: #e6f0e9;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.bar {
+  height: 100%;
+  width: 0;
+  background: #1aa15a;
+  transition: width .25s;
+}
+
+.status {
+  font-size: 14px;
+  color: #4b6556;
+  min-height: 22px;
+}
+
+.stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  margin-top: 8px;
+}
+
+.stats b {
+  color: #138a4b;
+}
+
+#preview {
+  max-width: 100%;
+  max-height: 500px;
+  display: none;
+  margin-top: 12px;
+  border-radius: 10px;
+  border: 1px solid #d7eadc;
+}
+
+.results {
+  margin-top: 14px;
+}
+
+.item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid #edf3ee;
+  font-size: 14px;
+}
+
+.seq {
+  width: 52px;
+  color: #557363;
+}
+
+.trk {
+  font-weight: 700;
+  letter-spacing: .4px;
+}
+
+.ok,
+.warn,
+.err {
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.ok {
+  background: #eaf8ef;
+  border: 1px solid #bfe3ca;
+  color: #17663a;
+}
+
+.warn {
+  background: #fff7df;
+  border: 1px solid #f0d78a;
+  color: #775b13;
+}
+
+.err {
+  background: #fff0f0;
+  border: 1px solid #efc1c1;
+  color: #9a2525;
+}
+
+.log {
+  font-size: 12px;
+  color: #71877a;
+  white-space: pre-wrap;
+  margin-top: 10px;
+}
+</style>
 </head>
-
-
 
 <body>
 
-
-<div class="container">
-
-
-  <!-- =====================================================
-       MAIN CARD
-  ====================================================== -->
+<div class="wrap">
 
   <div class="card">
 
+    <h1>ป.303 SCANNER</h1>
 
-    <div class="title">
-
-      <span class="title-icon">
-        📦
-      </span>
-
-      <span>
-        ป.303 SCANNER
-      </span>
-
+    <div class="sub">
+      อ่านเลขพัสดุจากบัญชีนำจ่ายด้วย Gemini
     </div>
-
-
-    <div class="subtitle">
-
-      ระบบอ่านเลขพัสดุจากบัญชีนำจ่าย ป.303
-
-    </div>
-
-
-    <!-- =================================================
-         UPLOAD
-    ================================================== -->
-
-    <label
-      class="upload-area"
-      for="fileInput"
-    >
-
-      <div id="uploadContent">
-
-        <div class="upload-icon">
-          📷
-        </div>
-
-        <div class="upload-title">
-          เลือกรูปภาพ ป.303
-        </div>
-
-        <div class="upload-subtitle">
-          รองรับ JPG / JPEG / PNG
-        </div>
-
-      </div>
-
-
-      <img
-        id="preview"
-        alt="preview"
-      >
-
-    </label>
-
 
     <input
-      type="file"
       id="fileInput"
-      accept="image/jpeg,image/jpg,image/png"
+      type="file"
+      accept="image/*"
     >
 
+    <img
+      id="preview"
+      alt="ตัวอย่างรูป"
+    >
 
-    <!-- =================================================
-         BUTTONS
-    ================================================== -->
+    <div class="row" style="margin-top:14px">
 
-    <div class="buttons">
-
-      <button
-        id="readButton"
-        class="btn-primary"
-        disabled
-      >
-        🔍 อ่านเลขพัสดุ
+      <button id="readBtn" disabled>
+        อ่านเลขพัสดุ
       </button>
 
-
-      <button
-        id="clearButton"
-        class="btn-secondary"
-      >
-        ล้างข้อมูล
+      <button id="clearBtn">
+        ล้าง
       </button>
 
     </div>
 
-
-    <!-- =================================================
-         PROGRESS
-    ================================================== -->
-
-    <div
-      id="progressWrap"
-      class="progress-wrap"
-    >
-
-      <div
-        id="progressText"
-        class="progress-text"
-      >
-        กำลังเตรียมภาพ...
-      </div>
-
-
-      <div class="progress-bg">
-
-        <div
-          id="progressBar"
-          class="progress-bar"
-        ></div>
-
-      </div>
-
+    <div class="progress">
+      <div id="bar" class="bar"></div>
     </div>
 
-
-    <!-- =================================================
-         STATUS
-    ================================================== -->
-
-    <div
-      id="status"
-      class="status"
-      style="display:none;"
-    ></div>
-
-
-  </div>
-
-
-
-  <!-- =====================================================
-       RESULT CARD
-  ====================================================== -->
-
-  <div class="card">
-
-
-    <!-- =================================================
-         STATS
-    ================================================== -->
+    <div id="status" class="status">
+      กรุณาเลือกรูป
+    </div>
 
     <div class="stats">
 
-
-      <div class="stat">
-
-        <div class="stat-label">
-          จำนวนที่อ่านได้
-        </div>
-
-        <div
-          id="countValue"
-          class="stat-value"
-        >
-          0
-        </div>
-
+      <div>
+        จำนวนที่อ่านได้:
+        <b id="count">0</b>
       </div>
 
-
-      <div class="stat">
-
-        <div class="stat-label">
-          สูงสุดที่รองรับ
-        </div>
-
-        <div class="stat-value">
-          100
-        </div>
-
+      <div>
+        จำนวนทั้งหมดในใบ:
+        <b id="sheetTotal">-</b>
       </div>
 
-
-    </div>
-
-
-    <!-- =================================================
-         SEARCH INPUT
-
-         ไม่มีปุ่มค้นหา
-
-         พิมพ์แล้วค้นหาอัตโนมัติ
-    ================================================== -->
-
-    <input
-      id="searchInput"
-      class="search-box"
-      type="text"
-      inputmode="numeric"
-      autocomplete="off"
-      placeholder="พิมพ์เลขพัสดุเพื่อค้นหา"
-    >
-
-
-    <!-- =================================================
-         RESULT COUNT
-    ================================================== -->
-
-    <div
-      id="resultCount"
-      class="result-count"
-    >
-      ยังไม่มีข้อมูล
-    </div>
-
-
-    <!-- =================================================
-         RESULTS
-    ================================================== -->
-
-    <div id="results">
-
-      <div class="empty">
-        ผลการอ่านจะแสดงที่นี่
+      <div>
+        ความคืบหน้า:
+        <b id="pct">0%</b>
       </div>
 
     </div>
 
+    <div id="message"></div>
 
   </div>
 
+
+  <div class="card">
+
+    <input
+      id="searchInput"
+      class="search"
+      placeholder="พิมพ์เลขเพื่อค้นหา เช่น 4914"
+    >
+
+    <div id="results" class="results"></div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div id="log" class="log"></div>
+
+  </div>
 
 </div>
 
 
-
 <script>
 
-
-/* =========================================================
-   GLOBAL
-========================================================= */
-
-let currentFile = null;
-
-let currentItems = [];
-
-const MAX_ITEMS = 100;
-
-
-
-/* =========================================================
-   DOM
-========================================================= */
-
 const fileInput =
-  document.getElementById(
-    'fileInput'
-  );
-
+  document.getElementById("fileInput");
 
 const preview =
-  document.getElementById(
-    'preview'
-  );
+  document.getElementById("preview");
 
+const readBtn =
+  document.getElementById("readBtn");
 
-const uploadContent =
-  document.getElementById(
-    'uploadContent'
-  );
+const clearBtn =
+  document.getElementById("clearBtn");
 
+const bar =
+  document.getElementById("bar");
 
-const readButton =
-  document.getElementById(
-    'readButton'
-  );
+const statusEl =
+  document.getElementById("status");
 
+const countEl =
+  document.getElementById("count");
 
-const clearButton =
-  document.getElementById(
-    'clearButton'
-  );
+const totalEl =
+  document.getElementById("sheetTotal");
 
+const pctEl =
+  document.getElementById("pct");
 
-const progressWrap =
-  document.getElementById(
-    'progressWrap'
-  );
-
-
-const progressText =
-  document.getElementById(
-    'progressText'
-  );
-
-
-const progressBar =
-  document.getElementById(
-    'progressBar'
-  );
-
-
-const status =
-  document.getElementById(
-    'status'
-  );
-
-
-const countValue =
-  document.getElementById(
-    'countValue'
-  );
-
+const resultsEl =
+  document.getElementById("results");
 
 const searchInput =
-  document.getElementById(
-    'searchInput'
-  );
+  document.getElementById("searchInput");
+
+const messageEl =
+  document.getElementById("message");
+
+const logEl =
+  document.getElementById("log");
 
 
-const resultCount =
-  document.getElementById(
-    'resultCount'
-  );
+let originalDataUrl = "";
+
+let originalMediaType = "image/jpeg";
+
+let all = [];
+
+let busy = false;
 
 
-const results =
-  document.getElementById(
-    'results'
-  );
+/* =========================
+   UI
+========================= */
+
+function setProgress(percent, text = "") {
+
+  const n =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(percent)
+      )
+    );
+
+  bar.style.width = n + "%";
+
+  pctEl.textContent =
+    n + "%";
+
+  if (text) {
+    statusEl.textContent = text;
+  }
+}
 
 
+function setMessage(type, text) {
 
-/* =========================================================
-   SELECT FILE
-========================================================= */
+  messageEl.className =
+    type || "";
 
-fileInput.addEventListener(
-  'change',
-  function(){
-
-    const file =
-      this.files &&
-      this.files[0];
+  messageEl.textContent =
+    text || "";
+}
 
 
-    if(!file){
+/* =========================
+   Tracking
+========================= */
 
-      return;
+function digitsOnly(value) {
 
-    }
-
-
-    currentFile =
-      file;
+  return String(value || "")
+    .replace(/[^0-9]/g, "");
+}
 
 
-    const url =
-      URL.createObjectURL(
-        file
+function normalizeTracking(value) {
+
+  let s =
+    String(value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+  /*
+   * บางครั้ง Gemini อาจตัด TH ออก
+   */
+  if (/^[A-Z]{2}[0-9]{9}$/.test(s)) {
+    s += "TH";
+  }
+
+  if (
+    !/^[A-Z]{2}[0-9]{9}TH$/.test(s)
+  ) {
+    return "";
+  }
+
+  return s;
+}
+
+
+/* =========================
+   Items
+========================= */
+
+function normalizeItems(items) {
+
+  const map = new Map();
+
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  for (const item of items) {
+
+    const seq =
+      Number(
+        item?.seq ??
+        item?.sequence
       );
 
+    const tracking =
+      normalizeTracking(
+        item?.tracking ??
+        item?.tracking_number
+      );
+
+    if (
+      !Number.isInteger(seq) ||
+      seq < 1 ||
+      seq > 100
+    ) {
+      continue;
+    }
+
+    if (!tracking) {
+      continue;
+    }
+
+    map.set(
+      seq,
+      {
+        seq,
+        tracking
+      }
+    );
+  }
+
+  return [...map.values()]
+    .sort((a, b) => a.seq - b.seq);
+}
+
+
+function mergeItems(items) {
+
+  const map =
+    new Map(
+      all.map(item => [
+        item.seq,
+        item
+      ])
+    );
+
+  for (
+    const item
+    of normalizeItems(items)
+  ) {
+
+    map.set(
+      item.seq,
+      item
+    );
+  }
+
+  all =
+    [...map.values()]
+      .sort(
+        (a, b) =>
+          a.seq - b.seq
+      );
+
+  render();
+}
+
+
+/* =========================
+   Render
+========================= */
+
+function render() {
+
+  countEl.textContent =
+    all.length;
+
+  const q =
+    searchInput.value
+      .trim()
+      .toUpperCase();
+
+  let list = all;
+
+  if (q) {
+
+    const digits =
+      digitsOnly(q);
+
+    list =
+      all.filter(item => {
+
+        if (
+          item.tracking.includes(q)
+        ) {
+          return true;
+        }
+
+        if (
+          digits &&
+          digitsOnly(
+            item.tracking
+          ).includes(digits)
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+  }
+
+  if (!list.length) {
+
+    resultsEl.innerHTML =
+      '<div style="padding:12px;color:#71877a">ไม่พบข้อมูล</div>';
+
+    return;
+  }
+
+  resultsEl.innerHTML =
+    list.map(item => {
+
+      return `
+        <div class="item">
+          <span class="seq">
+            #${item.seq}
+          </span>
+
+          <span class="trk">
+            ${item.tracking}
+          </span>
+        </div>
+      `;
+
+    }).join("");
+}
+
+
+searchInput.addEventListener(
+  "input",
+  render
+);
+
+
+/* =========================
+   File
+========================= */
+
+fileInput.addEventListener(
+  "change",
+  async () => {
+
+    const file =
+      fileInput.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    originalMediaType =
+      file.type ||
+      "image/jpeg";
+
+    originalDataUrl =
+      await readFileAsDataURL(file);
 
     preview.src =
-      url;
-
+      originalDataUrl;
 
     preview.style.display =
-      'block';
+      "block";
 
-
-    uploadContent.style.display =
-      'none';
-
-
-    readButton.disabled =
+    readBtn.disabled =
       false;
 
+    all = [];
 
-    status.style.display =
-      'none';
+    render();
 
+    totalEl.textContent =
+      "-";
 
+    setProgress(
+      0,
+      "พร้อมอ่าน"
+    );
+
+    setMessage(
+      "",
+      ""
+    );
+
+    logEl.textContent =
+      "";
   }
 );
 
 
+function readFileAsDataURL(file) {
 
-/* =========================================================
-   CLEAR
-========================================================= */
+  return new Promise(
+    (resolve, reject) => {
 
-clearButton.addEventListener(
-  'click',
-  function(){
+      const reader =
+        new FileReader();
 
-    currentFile =
-      null;
+      reader.onload =
+        () => resolve(
+          reader.result
+        );
 
+      reader.onerror =
+        reject;
 
-    currentItems =
-      [];
-
-
-    fileInput.value =
-      '';
-
-
-    preview.src =
-      '';
+      reader.readAsDataURL(file);
+    }
+  );
+}
 
 
-    preview.style.display =
-      'none';
+/* =========================
+   Data URL
+========================= */
 
+function dataUrlParts(dataUrl) {
 
-    uploadContent.style.display =
-      'block';
+  const match =
+    String(dataUrl).match(
+      /^data:([^;]+);base64,(.*)$/s
+    );
 
-
-    readButton.disabled =
-      true;
-
-
-    progressWrap.style.display =
-      'none';
-
-
-    progressBar.style.width =
-      '0%';
-
-
-    status.style.display =
-      'none';
-
-
-    countValue.textContent =
-      '0';
-
-
-    resultCount.textContent =
-      'ยังไม่มีข้อมูล';
-
-
-    searchInput.value =
-      '';
-
-
-    results.innerHTML =
-      '<div class="empty">ผลการอ่านจะแสดงที่นี่</div>';
-
+  if (!match) {
+    throw new Error(
+      "รูปภาพไม่ถูกต้อง"
+    );
   }
-);
+
+  return {
+    mediaType:
+      match[1] ||
+      "image/jpeg",
+
+    image:
+      match[2]
+  };
+}
 
 
+/* =========================
+   Crop
+========================= */
 
-/* =========================================================
-   LOAD IMAGE
-========================================================= */
-
-function loadImage(file){
+function cropImage(
+  dataUrl,
+  x,
+  y,
+  w,
+  h,
+  scale = 2.0,
+  quality = 0.68
+) {
 
   return new Promise(
     (resolve, reject) => {
@@ -1179,111 +684,157 @@ function loadImage(file){
       const img =
         new Image();
 
+      img.onload = () => {
 
-      img.onload =
-        () => {
-
-          URL.revokeObjectURL(
-            img.src
-          );
-
-
-          resolve(
-            img
-          );
-
-        };
-
-
-      img.onerror =
-        () => {
-
-          URL.revokeObjectURL(
-            img.src
-          );
-
-
-          reject(
-            new Error(
-              'เปิดรูปภาพไม่สำเร็จ'
+        const sx =
+          Math.max(
+            0,
+            Math.round(
+              x * img.naturalWidth
             )
           );
 
-        };
+        const sy =
+          Math.max(
+            0,
+            Math.round(
+              y * img.naturalHeight
+            )
+          );
 
+        const sw =
+          Math.min(
+            img.naturalWidth - sx,
+            Math.round(
+              w * img.naturalWidth
+            )
+          );
 
-      img.src =
-        URL.createObjectURL(
-          file
+        const sh =
+          Math.min(
+            img.naturalHeight - sy,
+            Math.round(
+              h * img.naturalHeight
+            )
+          );
+
+        const canvas =
+          document.createElement(
+            "canvas"
+          );
+
+        canvas.width =
+          Math.max(
+            1,
+            Math.round(
+              sw * scale
+            )
+          );
+
+        canvas.height =
+          Math.max(
+            1,
+            Math.round(
+              sh * scale
+            )
+          );
+
+        const ctx =
+          canvas.getContext(
+            "2d"
+          );
+
+        ctx.imageSmoothingEnabled =
+          true;
+
+        ctx.drawImage(
+          img,
+          sx,
+          sy,
+          sw,
+          sh,
+          0,
+          0,
+          canvas.width,
+          canvas.height
         );
 
+        const output =
+          canvas.toDataURL(
+            "image/jpeg",
+            quality
+          );
+
+        resolve(
+          dataUrlParts(output)
+        );
+      };
+
+      img.onerror =
+        () => reject(
+          new Error(
+            "โหลดรูปไม่สำเร็จ"
+          )
+        );
+
+      img.src =
+        dataUrl;
     }
   );
-
 }
 
 
+/* =========================
+   Make 4 columns
+========================= */
 
-/* =========================================================
-   NORMALIZE IMAGE
-
-   แบ่งรูปเป็น 4 คอลัมน์
-
-   รองรับสูงสุด 100 ลำดับ
-
-   Column 1:
-   1,5,9,...,97
-
-   Column 2:
-   2,6,10,...,98
-
-   Column 3:
-   3,7,11,...,99
-
-   Column 4:
-   4,8,12,...,100
-========================================================= */
-
-async function normalizeImage(file){
+async function makeColumns() {
 
   const img =
-    await loadImage(
-      file
-    );
+    new Image();
 
+  img.src =
+    originalDataUrl;
+
+  await new Promise(
+    (resolve, reject) => {
+
+      img.onload =
+        resolve;
+
+      img.onerror =
+        () => reject(
+          new Error(
+            "โหลดรูปไม่สำเร็จ"
+          )
+        );
+    }
+  );
 
   const srcW =
     img.naturalWidth;
-
 
   const srcH =
     img.naturalHeight;
 
 
   /*
-    พื้นที่ตาราง
-
-    ขยายพื้นที่แนวตั้ง
-    เพื่อให้รองรับถึง 100 แถว
-  */
-
+   * ตำแหน่งเดิมของระบบ
+   */
   const cropX =
     Math.round(
       srcW * 0.065
     );
-
 
   const cropY =
     Math.round(
       srcH * 0.285
     );
 
-
   const cropW =
     Math.round(
       srcW * 0.855
     );
-
 
   const cropH =
     Math.round(
@@ -1291,45 +842,10 @@ async function normalizeImage(file){
     );
 
 
-  const safeX =
-    Math.max(
-      0,
-      Math.min(
-        cropX,
-        srcW - 1
-      )
-    );
-
-
-  const safeY =
-    Math.max(
-      0,
-      Math.min(
-        cropY,
-        srcH - 1
-      )
-    );
-
-
   const safeW =
-    Math.min(
-      cropW,
-      srcW - safeX
-    );
+    cropW;
 
-
-  const safeH =
-    Math.min(
-      cropH,
-      srcH - safeY
-    );
-
-
-  /*
-    ช่องว่างระหว่างคอลัมน์
-  */
-
-  const colGap =
+  const gap =
     Math.max(
       2,
       Math.round(
@@ -1337,1476 +853,805 @@ async function normalizeImage(file){
       )
     );
 
-
-  /*
-    ความกว้างแต่ละคอลัมน์
-  */
-
   const colW =
     Math.floor(
       (
         safeW -
-        colGap * 3
+        gap * 3
       ) / 4
     );
 
 
-  /*
-    ขยายภาพ 2 เท่า
-  */
-
-  const scale =
-    2.0;
+  const columns = [];
 
 
-  const images =
-    [];
+  for (
+    let i = 0;
+    i < 4;
+    i++
+  ) {
 
+    const x =
+      cropX +
+      i * (colW + gap);
 
-  /*
-    สร้างภาพทีละคอลัมน์
-  */
+    const column =
+      await cropImage(
+        originalDataUrl,
 
-  for(
-    let columnIndex = 0;
-    columnIndex < 4;
-    columnIndex++
-  ){
+        x / srcW,
+        cropY / srcH,
 
-    const sx =
-      safeX +
-      columnIndex *
-      (
-        colW +
-        colGap
-      );
+        colW / srcW,
+        cropH / srcH,
 
-
-    const sy =
-      safeY;
-
-
-    const sw =
-      colW;
-
-
-    const sh =
-      safeH;
-
-
-    const canvas =
-      document.createElement(
-        'canvas'
-      );
-
-
-    canvas.width =
-      Math.round(
-        sw * scale
-      );
-
-
-    canvas.height =
-      Math.round(
-        sh * scale
-      );
-
-
-    const ctx =
-      canvas.getContext(
-        '2d',
-        {
-          alpha: false
-        }
-      );
-
-
-    /*
-      พื้นหลังขาว
-    */
-
-    ctx.fillStyle =
-      '#ffffff';
-
-
-    ctx.fillRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-
-    ctx.imageSmoothingEnabled =
-      true;
-
-
-    ctx.imageSmoothingQuality =
-      'high';
-
-
-    /*
-      วาดเฉพาะคอลัมน์
-    */
-
-    ctx.drawImage(
-
-      img,
-
-      sx,
-      sy,
-      sw,
-      sh,
-
-      0,
-      0,
-      canvas.width,
-      canvas.height
-
-    );
-
-
-    /*
-      JPEG quality 0.68
-
-      ลดขนาด request
-      แต่ยังรักษาความคม
-    */
-
-    const dataUrl =
-      canvas.toDataURL(
-        'image/jpeg',
+        2.0,
         0.68
       );
 
-
-    images.push(
-      dataUrl.split(',')[1]
+    columns.push(
+      column
     );
-
   }
 
 
-  return {
-
-    images,
-
-    mediaType:
-      'image/jpeg'
-
-  };
-
+  return columns;
 }
 
 
+/* =========================
+   Detect total
+========================= */
 
-/* =========================================================
-   EXTRACT COLUMN
+async function detectSheetTotal() {
 
-   ส่งทีละคอลัมน์ไป Server
+  /*
+   * อ่านเฉพาะส่วนหัว
+   * เพื่อหา "จำนวน 82 ชิ้น"
+   */
 
-   columnIndex:
+  const head =
+    await cropImage(
+      originalDataUrl,
 
-   0 = ลำดับ 1,5,9...
-   1 = ลำดับ 2,6,10...
-   2 = ลำดับ 3,7,11...
-   3 = ลำดับ 4,8,12...
-========================================================= */
+      0.03,
+      0.00,
+      0.94,
+      0.31,
 
-async function extractColumn(
-  image,
-  mediaType,
-  columnIndex
-){
+      1.5,
+      0.70
+    );
+
 
   const controller =
     new AbortController();
 
-
-  /*
-    timeout ต่อคอลัมน์
-
-    ถ้าคอลัมน์หนึ่งช้าเกินไป
-    จะ Error แล้วไปคอลัมน์ถัดไป
-  */
-
-  const timeout =
+  const timer =
     setTimeout(
-      () => {
-
-        controller.abort();
-
-      },
-      35000
+      () => controller.abort(),
+      30000
     );
 
 
-  try{
+  try {
 
     const response =
       await fetch(
-        '/api/extract',
+        "/api/extract",
         {
-
-          method:
-            'POST',
+          method: "POST",
 
           headers: {
-
-            'Content-Type':
-              'application/json'
-
+            "Content-Type":
+              "application/json"
           },
-
 
           body:
             JSON.stringify({
-
               image:
-                image,
+                head.image,
 
               mediaType:
-                mediaType ||
-                'image/jpeg',
+                head.mediaType,
 
-              columnIndex:
-                columnIndex
-
+              mode:
+                "detect_total"
             }),
-
 
           signal:
             controller.signal
-
         }
       );
 
 
-    const rawText =
+    const raw =
       await response.text();
 
 
     let data;
 
-
-    /*
-      แปลง response เป็น JSON
-    */
-
-    try{
+    try {
 
       data =
-        JSON.parse(
-          rawText
-        );
+        JSON.parse(raw);
 
-    }catch(e){
+    } catch {
 
       throw new Error(
-        'Server ส่งข้อมูลกลับมาไม่ใช่ JSON'
+        `Server ตอบกลับไม่ใช่ JSON (HTTP ${response.status})`
       );
-
     }
 
 
-    /*
-      HTTP Error
-    */
-
-    if(!response.ok){
+    if (!response.ok) {
 
       throw new Error(
-
-        data?.error ||
-        `HTTP ${response.status}`
-
+        data.error ||
+        `ตรวจจำนวนรวมไม่สำเร็จ (HTTP ${response.status})`
       );
-
     }
 
 
-    /*
-      ต้องมี items
-    */
+    const total =
+      Number(data.total);
 
-    if(
-      !Array.isArray(
-        data?.items
-      )
-    ){
+
+    if (
+      !Number.isInteger(total) ||
+      total < 1 ||
+      total > 100
+    ) {
 
       throw new Error(
-        'Server ไม่ส่งรายการ items กลับมา'
+        "อ่านจำนวนทั้งหมดในใบไม่สำเร็จ"
       );
-
     }
 
 
-    return data.items;
+    return total;
+
+  } finally {
+
+    clearTimeout(timer);
+  }
+}
 
 
-  }catch(error){
+/* =========================
+   Call column
+========================= */
 
-    /*
-      Timeout
-    */
+async function callColumn(
+  column,
+  columnIndex
+) {
 
-    if(
+  const controller =
+    new AbortController();
+
+  const timer =
+    setTimeout(
+      () => controller.abort(),
+      35000
+    );
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/extract",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              image:
+                column.image,
+
+              mediaType:
+                column.mediaType ||
+                "image/jpeg",
+
+              columnIndex,
+
+              sheetTotal:
+                Number(
+                  totalEl.textContent
+                )
+
+            }),
+
+          signal:
+            controller.signal
+        }
+      );
+
+
+    const raw =
+      await response.text();
+
+
+    let data;
+
+    try {
+
+      data =
+        JSON.parse(raw);
+
+    } catch {
+
+      throw new Error(
+        `Server ตอบกลับไม่ใช่ JSON (HTTP ${response.status})`
+      );
+    }
+
+
+    if (!response.ok) {
+
+      let detail = "";
+
+      if (data.details) {
+
+        detail =
+          `: ${data.details}`;
+      }
+
+      throw new Error(
+        (
+          data.error ||
+          `HTTP ${response.status}`
+        ) + detail
+      );
+    }
+
+
+    return data;
+
+  } catch (error) {
+
+    if (
       error.name ===
-      'AbortError'
-    ){
+      "AbortError"
+    ) {
 
       throw new Error(
-
-        `คอลัมน์ที่ ${
-          columnIndex + 1
-        } ใช้เวลานานเกินไป`
-
+        "หมดเวลา 35 วินาที"
       );
-
     }
-
 
     throw error;
 
+  } finally {
 
-  }finally{
-
-    clearTimeout(
-      timeout
-    );
-
+    clearTimeout(timer);
   }
-
 }
 
 
+/* =========================
+   Expected sequences
+========================= */
 
-/* =========================================================
-   NORMALIZE ITEM
-========================================================= */
+function expectedForColumn(
+  columnIndex,
+  total
+) {
 
-function normalizeItem(item){
+  const result = [];
 
-  if(!item){
+  for (
+    let seq = columnIndex + 1;
+    seq <= total;
+    seq += 4
+  ) {
 
-    return null;
-
+    result.push(seq);
   }
 
-
-  /*
-    รองรับทั้ง
-
-    seq
-
-    และ
-
-    sequence
-  */
-
-  let seq =
-    item.seq ??
-    item.sequence;
-
-
-  /*
-    รองรับทั้ง
-
-    tracking
-
-    และ
-
-    tracking_number
-  */
-
-  let tracking =
-    item.tracking ??
-    item.tracking_number;
-
-
-  if(
-    seq === undefined ||
-    seq === null
-  ){
-
-    return null;
-
-  }
-
-
-  /*
-    แปลง sequence เป็นตัวเลข
-  */
-
-  seq =
-    parseInt(
-
-      String(seq)
-        .replace(
-          /\D/g,
-          ''
-        ),
-
-      10
-
-    );
-
-
-  if(
-    !Number.isFinite(
-      seq
-    )
-  ){
-
-    return null;
-
-  }
-
-
-  /*
-    จำกัด 1-100
-  */
-
-  if(
-    seq < 1 ||
-    seq > MAX_ITEMS
-  ){
-
-    return null;
-
-  }
-
-
-  if(!tracking){
-
-    return null;
-
-  }
-
-
-  /*
-    ทำให้ tracking เป็นมาตรฐาน
-  */
-
-  tracking =
-    String(
-      tracking
-    )
-      .toUpperCase()
-      .replace(
-        /[\s-]/g,
-        ''
-      );
-
-
-  /*
-    ตรวจรูปแบบ
-
-    2 ตัวอักษร
-    9 ตัวเลข
-    TH
-  */
-
-  const match =
-    tracking.match(
-      /^([A-Z]{2})(\d{9})(TH)?$/
-    );
-
-
-  if(!match){
-
-    return null;
-
-  }
-
-
-  return {
-
-    seq:
-      seq,
-
-    tracking:
-      match[1] +
-      match[2] +
-      'TH'
-
-  };
-
+  return result;
 }
 
 
+/* =========================
+   Missing
+========================= */
 
-/* =========================================================
-   COMBINE ITEMS
+function missingForColumn(
+  items,
+  columnIndex,
+  total
+) {
 
-   ป้องกัน sequence ซ้ำ
-
-   เรียง 1 → 100
-========================================================= */
-
-function combineItems(all){
-
-  const map =
-    new Map();
-
-
-  for(
-    const raw of all
-  ){
-
-    const item =
-      normalizeItem(
-        raw
-      );
-
-
-    if(!item){
-
-      continue;
-
-    }
-
-
-    /*
-      ถ้า sequence นี้ยังไม่มี
-      ให้เก็บไว้
-
-      ไม่เขียนทับข้อมูลเดิม
-    */
-
-    if(
-      !map.has(
-        item.seq
-      )
-    ){
-
-      map.set(
-        item.seq,
-        item
-      );
-
-    }
-
-  }
-
-
-  return Array
-    .from(
-      map.values()
-    )
-    .sort(
-      (a,b) =>
-        a.seq - b.seq
-    )
-    .slice(
-      0,
-      MAX_ITEMS
+  const expected =
+    expectedForColumn(
+      columnIndex,
+      total
     );
 
+  const got =
+    new Set(
+      normalizeItems(items)
+        .map(item => item.seq)
+    );
+
+
+  return expected.filter(
+    seq => !got.has(seq)
+  );
 }
 
 
+/* =========================
+   Read one column
+   IMPORTANT:
+   NEVER SKIP
+========================= */
 
-/* =========================================================
-   READ SHEET
+async function readOneColumnUntilComplete(
+  column,
+  columnIndex,
+  total
+) {
 
-   สำคัญที่สุด
-
-   อ่านทีละคอลัมน์
-
-   ถ้าสำเร็จ:
-      เก็บข้อมูล
-
-   ถ้า Error:
-      ข้ามทันที
-
-   ไม่มี Retry
-
-   ไม่มีการอ่านคอลัมน์เดิมซ้ำ
-
-   ตัวอย่าง:
-
-   Column 1 ✅
-   Column 2 ❌
-   Column 3 ✅
-   Column 4 ✅
-
-   จะได้:
-
-   Column 1 + Column 3 + Column 4
-
-========================================================= */
-
-async function readSheet(){
-
-  if(!currentFile){
-
-    throw new Error(
-      'กรุณาเลือกรูปภาพก่อน'
-    );
-
-  }
-
-
-  progressWrap.style.display =
-    'block';
-
-
-  status.style.display =
-    'none';
-
-
-  progressBar.style.width =
-    '2%';
-
-
-  progressText.textContent =
-    'กำลังเตรียมภาพ...';
-
-
-  /*
-    แบ่งภาพเป็น 4 คอลัมน์
-  */
-
-  const {
-    images,
-    mediaType
-  } =
-    await normalizeImage(
-      currentFile
+  const expected =
+    expectedForColumn(
+      columnIndex,
+      total
     );
 
 
-  /*
-    เก็บข้อมูลจากคอลัมน์
-    ที่อ่านสำเร็จเท่านั้น
-  */
-
-  let allItems =
-    [];
+  let lastError =
+    "";
 
 
   /*
-    เก็บสถานะคอลัมน์
-  */
+   * ถ้าไม่ครบ จะอยู่คอลัมน์เดิม
+   * ไม่ข้ามไปคอลัมน์ถัดไป
+   */
 
-  const successColumns =
-    [];
+  for (
+    let attempt = 1;
+    attempt <= 4;
+    attempt++
+  ) {
 
-
-  const failedColumns =
-    [];
-
-
-  /*
-    =====================================================
-    อ่านทีละคอลัมน์
-    =====================================================
-  */
-
-  for(
-    let columnIndex = 0;
-    columnIndex < 4;
-    columnIndex++
-  ){
-
-    const columnNumber =
-      columnIndex + 1;
+    statusEl.textContent =
+      `กำลังอ่านคอลัมน์ ${columnIndex + 1}/4 ครั้งที่ ${attempt}/4`;
 
 
-    /*
-      แสดงสถานะ
-    */
+    try {
 
-    progressText.textContent =
-      `กำลังอ่านคอลัมน์ ${columnNumber} / 4...`;
+      const data =
+        await callColumn(
+          column,
+          columnIndex
+        );
 
-
-    progressBar.style.width =
-      `${5 + columnIndex * 23}%`;
-
-
-    /*
-      =================================================
-      สำคัญ:
-
-      try/catch อยู่เฉพาะคอลัมน์
-
-      ดังนั้นถ้าคอลัมน์นี้ Error
-      จะไม่ทำให้ทั้งงานหยุด
-      และจะไม่ retry
-      =================================================
-    */
-
-    try{
 
       const items =
-        await extractColumn(
+        normalizeItems(
+          data.items
+        );
 
-          images[columnIndex],
 
-          mediaType,
-
-          columnIndex
-
+      const missing =
+        missingForColumn(
+          items,
+          columnIndex,
+          total
         );
 
 
       /*
-        ตรวจว่าเป็น array
-      */
+       * ครบแล้วเท่านั้น
+       * จึงถือว่าคอลัมน์สำเร็จ
+       */
 
-      if(
-        Array.isArray(
-          items
-        )
-      ){
+      if (
+        missing.length === 0
+      ) {
+
+        logEl.textContent +=
+          `คอลัมน์ ${columnIndex + 1}: สำเร็จ ${items.length}/${expected.length}\n`;
+
+        return items;
+      }
+
+
+      lastError =
+        `คอลัมน์ ${columnIndex + 1}: ได้ ${items.length}/${expected.length} รายการ — ขาด #${missing.join(", #")}`;
+
+
+      logEl.textContent +=
+        lastError + "\n";
+
+
+      /*
+       * ไม่ return
+       * ไม่ continue ไปคอลัมน์ถัดไป
+       *
+       * วนกลับมาอ่านคอลัมน์เดิม
+       */
+
+    } catch (error) {
+
+      lastError =
+        `คอลัมน์ ${columnIndex + 1}: ครั้งที่ ${attempt}/4 ERROR — ${error.message}`;
+
+
+      logEl.textContent +=
+        lastError + "\n";
+
+
+      /*
+       * Error ก็ยังอยู่คอลัมน์เดิม
+       */
+    }
+
+
+    /*
+     * เว้นนิดหนึ่งก่อน retry
+     */
+
+    if (attempt < 4) {
+
+      await new Promise(
+        resolve =>
+          setTimeout(
+            resolve,
+            1200
+          )
+      );
+    }
+  }
+
+
+  /*
+   * ครบ 4 ครั้งแล้วยังไม่ผ่าน
+   *
+   * หยุดทั้งงาน
+   * ห้ามข้าม
+   */
+
+  throw new Error(
+    lastError ||
+    `คอลัมน์ ${columnIndex + 1} ยังอ่านไม่ครบ`
+  );
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+readBtn.addEventListener(
+  "click",
+  async () => {
+
+    if (
+      busy ||
+      !originalDataUrl
+    ) {
+      return;
+    }
+
+
+    busy = true;
+
+    readBtn.disabled =
+      true;
+
+    clearBtn.disabled =
+      true;
+
+
+    all = [];
+
+    render();
+
+    setMessage(
+      "",
+      ""
+    );
+
+    logEl.textContent =
+      "";
+
+
+    try {
+
+      /* ---------------------
+         1. Detect total
+      --------------------- */
+
+      setProgress(
+        3,
+        "กำลังตรวจจำนวนทั้งหมดในใบ..."
+      );
+
+
+      let total = null;
+
+
+      /*
+       * จำนวนรวมสำคัญมาก
+       * ถ้าอ่านไม่ได้ ห้ามเดา
+       */
+
+      for (
+        let attempt = 1;
+        attempt <= 4 &&
+        total === null;
+        attempt++
+      ) {
+
+        try {
+
+          total =
+            await detectSheetTotal();
+
+        } catch (error) {
+
+          logEl.textContent +=
+            `ตรวจจำนวนรวม ครั้งที่ ${attempt}/4: ${error.message}\n`;
+
+
+          if (
+            attempt < 4
+          ) {
+
+            await new Promise(
+              resolve =>
+                setTimeout(
+                  resolve,
+                  1200
+                )
+            );
+          }
+        }
+      }
+
+
+      if (
+        total === null
+      ) {
+
+        throw new Error(
+          "ตรวจจำนวนทั้งหมดในใบไม่สำเร็จ จึงหยุดเพื่อป้องกันเลขหาย"
+        );
+      }
+
+
+      totalEl.textContent =
+        total;
+
+
+      setProgress(
+        8,
+        `พบจำนวนทั้งหมด ${total} รายการ กำลังเตรียมรูป...`
+      );
+
+
+      /* ---------------------
+         2. Make columns
+      --------------------- */
+
+      const columns =
+        await makeColumns();
+
+
+      /* ---------------------
+         3. Read 4 columns
+      --------------------- */
+
+      for (
+        let columnIndex = 0;
+        columnIndex < 4;
+        columnIndex++
+      ) {
 
         /*
-          เก็บผลทันที
-        */
+         * ตรงนี้สำคัญมาก:
+         *
+         * ฟังก์ชันจะไม่จบ
+         * จนกว่าคอลัมน์นี้จะครบ
+         *
+         * ถ้า Error / ขาดเลข
+         * จะ retry คอลัมน์เดิม
+         */
 
-        allItems =
-          allItems.concat(
-            items
+        const items =
+          await readOneColumnUntilComplete(
+            columns[columnIndex],
+            columnIndex,
+            total
           );
 
+
+        /*
+         * เพิ่มข้อมูลของคอลัมน์
+         * หลังจากตรวจว่าครบแล้วเท่านั้น
+         */
+
+        mergeItems(items);
+
+
+        const progress =
+          10 +
+          ((columnIndex + 1) / 4) * 82;
+
+
+        setProgress(
+          progress,
+          `คอลัมน์ ${columnIndex + 1}/4 สำเร็จ — ได้ ${items.length} รายการ`
+        );
+      }
+
+
+      /* ---------------------
+         4. Final verification
+      --------------------- */
+
+      const expected =
+        Array.from(
+          {
+            length: total
+          },
+          (_, i) => i + 1
+        );
+
+
+      const got =
+        new Set(
+          all.map(
+            item => item.seq
+          )
+        );
+
+
+      const missing =
+        expected.filter(
+          seq => !got.has(seq)
+        );
+
+
+      /*
+       * ถ้ามีเลขหาย
+       * ห้ามบอกว่าสำเร็จ
+       */
+
+      if (
+        missing.length
+      ) {
+
+        throw new Error(
+          `ยังขาดลำดับ #${missing.join(", #")} — ระบบหยุดและไม่ข้าม`
+        );
       }
 
 
       /*
-        บันทึกว่าคอลัมน์นี้สำเร็จ
-      */
+       * ตรวจจำนวนสุดท้ายอีกชั้น
+       */
 
-      successColumns.push(
-        columnNumber
-      );
+      if (
+        all.length !== total
+      ) {
 
-
-      /*
-        รวมข้อมูลปัจจุบัน
-      */
-
-      currentItems =
-        combineItems(
-          allItems
+        throw new Error(
+          `จำนวนไม่ตรง: ได้ ${all.length}/${total} รายการ`
         );
+      }
 
 
-      /*
-        อัปเดตจำนวน
-      */
-
-      countValue.textContent =
-        currentItems.length;
-
-
-      /*
-        แสดงรายการทันที
-      */
-
-      renderResults(
-        currentItems
+      setProgress(
+        100,
+        `อ่านครบ ${total}/${total} รายการแล้ว`
       );
 
 
-      /*
-        อัปเดต progress
-      */
-
-      progressBar.style.width =
-        `${10 + columnIndex * 23}%`;
-
-
-      progressText.textContent =
-        `คอลัมน์ ${columnNumber} สำเร็จ • ` +
-        `อ่านได้ ${currentItems.length} รายการ`;
-
-
-    }catch(error){
-
-      /*
-        =================================================
-        คอลัมน์นี้ Error
-
-        ไม่ Retry
-
-        ไม่อ่านซ้ำ
-
-        ไปคอลัมน์ถัดไปทันที
-        =================================================
-      */
-
-      console.error(
-
-        `คอลัมน์ ${columnNumber} Error:`,
-
-        error
-
+      setMessage(
+        "ok",
+        `อ่านสำเร็จครบทุกเลข ${total}/${total} รายการ`
       );
 
 
-      /*
-        บันทึกคอลัมน์ที่ล้มเหลว
-      */
+    } catch (error) {
 
-      failedColumns.push(
-        columnNumber
+      /*
+       * ไม่ข้าม
+       * ไม่แสดงว่าสำเร็จ
+       */
+
+      setMessage(
+        "err",
+        `หยุดการอ่าน: ${error.message}`
       );
 
 
-      /*
-        ข้อมูลของคอลัมน์ก่อนหน้า
-        ยังคงอยู่
-      */
-
-      currentItems =
-        combineItems(
-          allItems
-        );
+      statusEl.textContent =
+        "ยังอ่านไม่ครบ — ไม่มีการข้ามคอลัมน์";
 
 
-      /*
-        อัปเดตจำนวน
-      */
+    } finally {
 
-      countValue.textContent =
-        currentItems.length;
+      busy = false;
 
+      readBtn.disabled =
+        !originalDataUrl;
 
-      /*
-        แสดงข้อมูลที่อ่านได้แล้ว
-      */
-
-      renderResults(
-        currentItems
-      );
-
-
-      /*
-        แจ้งผู้ใช้
-      */
-
-      progressText.textContent =
-        `คอลัมน์ ${columnNumber} อ่านไม่สำเร็จ ` +
-        `กำลังไปคอลัมน์ถัดไป...`;
-
-
-      /*
-        สำคัญ:
-
-        ไม่มีการเรียก
-        extractColumn()
-        ซ้ำ
-
-        continue จะไป loop รอบถัดไปทันที
-      */
-
-      continue;
-
+      clearBtn.disabled =
+        false;
     }
 
   }
+);
 
 
-  /*
-    =====================================================
-    อ่านครบ 4 คอลัมน์แล้ว
-    =====================================================
-  */
+/* =========================
+   Clear
+========================= */
 
-  currentItems =
-    combineItems(
-      allItems
+clearBtn.addEventListener(
+  "click",
+  () => {
+
+    busy = false;
+
+    originalDataUrl =
+      "";
+
+    all = [];
+
+    fileInput.value =
+      "";
+
+    preview.removeAttribute(
+      "src"
     );
 
+    preview.style.display =
+      "none";
 
-  /*
-    จำนวนจริง
-  */
-
-  countValue.textContent =
-    currentItems.length;
-
-
-  /*
-    Progress 100%
-  */
-
-  progressBar.style.width =
-    '100%';
-
-
-  progressText.textContent =
-    'อ่านครบทั้ง 4 คอลัมน์แล้ว';
-
-
-  /*
-    แสดงรายการสุดท้าย
-  */
-
-  renderResults(
-    currentItems
-  );
-
-
-  /*
-    =====================================================
-    STATUS
-    =====================================================
-  */
-
-  status.style.display =
-    'block';
-
-
-  status.className =
-    'status';
-
-
-  /*
-    ถ้าสำเร็จครบ 4 คอลัมน์
-  */
-
-  if(
-    failedColumns.length === 0
-  ){
-
-    status.textContent =
-      `อ่านเสร็จแล้ว พบ ${currentItems.length} รายการ`;
-
-  }
-
-
-  /*
-    ถ้ามีบางคอลัมน์ Error
-  */
-
-  else{
-
-    status.textContent =
-      `อ่านเสร็จแล้ว พบ ${currentItems.length} รายการ ` +
-      `(สำเร็จ ${successColumns.length} คอลัมน์, ` +
-      `ข้าม ${failedColumns.length} คอลัมน์)`;
-
-  }
-
-
-  /*
-    Debug ใน Console
-  */
-
-  console.log(
-    'คอลัมน์ที่สำเร็จ:',
-    successColumns
-  );
-
-
-  console.log(
-    'คอลัมน์ที่ Error:',
-    failedColumns
-  );
-
-
-  console.log(
-    'จำนวนรายการสุดท้าย:',
-    currentItems.length
-  );
-
-}
-
-
-
-/* =========================================================
-   READ BUTTON
-========================================================= */
-
-readButton.addEventListener(
-  'click',
-  async function(){
-
-    if(!currentFile){
-
-      return;
-
-    }
-
-
-    /*
-      ป้องกันกดซ้ำระหว่างอ่าน
-    */
-
-    readButton.disabled =
+    readBtn.disabled =
       true;
 
+    totalEl.textContent =
+      "-";
 
-    try{
-
-      /*
-        เริ่มอ่าน
-      */
-
-      await readSheet();
-
-
-    }catch(error){
-
-      console.error(
-        error
-      );
-
-
-      /*
-        กรณี Error ใหญ่
-        เช่น เปิดรูปไม่ได้
-      */
-
-      status.style.display =
-        'block';
-
-
-      status.className =
-        'status error';
-
-
-      status.textContent =
-        'อ่านไม่สำเร็จ: ' +
-        (
-          error.message ||
-          'เกิดข้อผิดพลาด'
-        );
-
-
-      progressText.textContent =
-        'เกิดข้อผิดพลาด';
-
-
-    }finally{
-
-      /*
-        เปิดปุ่มกลับมา
-      */
-
-      readButton.disabled =
-        false;
-
-    }
-
-  }
-);
-
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHtml(value){
-
-  return String(
-    value || ''
-  )
-
-    .replace(
-      /&/g,
-      '&amp;'
-    )
-
-    .replace(
-      /</g,
-      '&lt;'
-    )
-
-    .replace(
-      />/g,
-      '&gt;'
-    )
-
-    .replace(
-      /"/g,
-      '&quot;'
-    )
-
-    .replace(
-      /'/g,
-      '&#039;'
-    );
-
-}
-
-
-
-/* =========================================================
-   HIGHLIGHT SEARCH
-========================================================= */
-
-function highlightMatch(
-  tracking,
-  query
-){
-
-  const text =
-    String(
-      tracking || ''
-    );
-
-
-  const q =
-    String(
-      query || ''
-    )
-      .trim()
-      .toUpperCase();
-
-
-  /*
-    ไม่มีคำค้น
-  */
-
-  if(!q){
-
-    return escapeHtml(
-      text
-    );
-
-  }
-
-
-  /*
-    ถ้าพิมพ์เฉพาะตัวเลข
-
-    เช่น:
-
-    4914
-
-    จะ highlight
-    เฉพาะ 4914
-  */
-
-  if(
-    /^\d+$/.test(q)
-  ){
-
-    const escaped =
-      escapeHtml(
-        text
-      );
-
-
-    const regex =
-      new RegExp(
-        q,
-        'g'
-      );
-
-
-    return escaped.replace(
-
-      regex,
-
-      '<span class="highlight">$&</span>'
-
-    );
-
-  }
-
-
-  /*
-    ถ้าพิมพ์ tracking เต็ม
-  */
-
-  const escaped =
-    escapeHtml(
-      text
-    );
-
-
-  const index =
-    escaped
-      .toUpperCase()
-      .indexOf(
-        q
-      );
-
-
-  if(index === -1){
-
-    return escaped;
-
-  }
-
-
-  return (
-
-    escaped.slice(
+    setProgress(
       0,
-      index
-    )
-
-    +
-
-    '<span class="highlight">'
-
-    +
-
-    escaped.slice(
-      index,
-      index + q.length
-    )
-
-    +
-
-    '</span>'
-
-    +
-
-    escaped.slice(
-      index + q.length
-    )
-
-  );
-
-}
-
-
-
-/* =========================================================
-   RENDER RESULTS
-========================================================= */
-
-function renderResults(
-  items,
-  query = ''
-){
-
-  /*
-    ไม่มีข้อมูล
-  */
-
-  if(!items.length){
-
-    results.innerHTML =
-      '<div class="empty">ไม่พบข้อมูล</div>';
-
-
-    return;
-
-  }
-
-
-  /*
-    เรียง sequence
-  */
-
-  const sorted =
-    [...items].sort(
-
-      (a,b) =>
-        a.seq - b.seq
-
+      "กรุณาเลือกรูป"
     );
 
-
-  /*
-    สร้างรายการ
-  */
-
-  results.innerHTML =
-    sorted
-      .map(
-
-        item => {
-
-          return `
-
-            <div class="result-item">
-
-              <div class="result-seq">
-
-                #${escapeHtml(
-                  item.seq
-                )}
-
-              </div>
-
-
-              <div class="result-tracking">
-
-                ${highlightMatch(
-                  item.tracking,
-                  query
-                )}
-
-              </div>
-
-            </div>
-
-          `;
-
-        }
-
-      )
-      .join('');
-
-}
-
-
-
-/* =========================================================
-   AUTO SEARCH
-
-   ไม่มีปุ่มค้นหา
-
-   พิมพ์แล้วค้นหาเลย
-
-   เช่น:
-
-   4
-   49
-   491
-   4914
-
-   จะค้นหาอัตโนมัติ
-========================================================= */
-
-searchInput.addEventListener(
-  'input',
-  function(){
-
-    const query =
-      this.value.trim();
-
-
-    /*
-      ถ้าลบข้อความออกหมด
-      ให้แสดงทั้งหมด
-    */
-
-    if(!query){
-
-      resultCount.textContent =
-        `ทั้งหมด ${currentItems.length} รายการ`;
-
-
-      renderResults(
-        currentItems
-      );
-
-
-      return;
-
-    }
-
-
-    const qUpper =
-      query.toUpperCase();
-
-
-    const qDigits =
-      query.replace(
-        /\D/g,
-        ''
-      );
-
-
-    /*
-      ค้นหาจากรายการทั้งหมด
-    */
-
-    const filtered =
-      currentItems.filter(
-
-        item => {
-
-          const tracking =
-            String(
-              item.tracking || ''
-            ).toUpperCase();
-
-
-          /*
-            ค้นแบบข้อความ
-
-            เช่น:
-
-            WB082049144TH
-          */
-
-          if(
-            tracking.includes(
-              qUpper
-            )
-          ){
-
-            return true;
-
-          }
-
-
-          /*
-            ค้นเฉพาะตัวเลข
-
-            เช่น:
-
-            4914
-
-            จะเจอ:
-
-            JG082049144TH
-          */
-
-          if(
-
-            qDigits &&
-
-            tracking
-              .replace(
-                /\D/g,
-                ''
-              )
-              .includes(
-                qDigits
-              )
-
-          ){
-
-            return true;
-
-          }
-
-
-          return false;
-
-        }
-
-      );
-
-
-    /*
-      แสดงจำนวนผลค้นหา
-    */
-
-    resultCount.textContent =
-      `พบ ${filtered.length} รายการ`;
-
-
-    /*
-      แสดงเฉพาะผลที่ค้นเจอ
-    */
-
-    renderResults(
-      filtered,
-      query
+    setMessage(
+      "",
+      ""
     );
 
+    searchInput.value =
+      "";
+
+    render();
+
+    logEl.textContent =
+      "";
   }
 );
 
 
+/* Initial */
+render();
 
 </script>
-
 
 </body>
 </html>
