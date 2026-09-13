@@ -363,154 +363,225 @@ function isLikelyImage(file){
 function normalizeImage(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
     reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+
     reader.onload = () => {
       const img = new Image();
+
       img.onerror = () => reject(new Error('เปิดไฟล์รูปภาพนี้ไม่ได้'));
+
       img.onload = () => {
         try{
           const srcW = img.naturalWidth || img.width;
           const srcH = img.naturalHeight || img.height;
 
-          // Keep a small thumbnail for the sheet card.
+          // Thumbnail for the sheet card only.
           const thumbMax = 900;
           const thumbScale = Math.min(1, thumbMax / Math.max(srcW, srcH));
           const thumbW = Math.max(1, Math.round(srcW * thumbScale));
           const thumbH = Math.max(1, Math.round(srcH * thumbScale));
+
           const thumbCanvas = document.createElement('canvas');
           thumbCanvas.width = thumbW;
           thumbCanvas.height = thumbH;
+
           const thumbCtx = thumbCanvas.getContext('2d');
           thumbCtx.drawImage(img, 0, 0, thumbW, thumbH);
           const dataUrl = thumbCanvas.toDataURL('image/jpeg', 0.82);
 
-          // The parcel table occupies roughly the lower-middle part of
-          // a standard ป.303 sheet. We crop the table and split its four
-          // columns into a 2x2 enlarged image. This keeps ONE API request
-          // while giving the vision model much larger characters to read.
-          const cropX = Math.round(srcW * 0.055);
-          const cropY = Math.round(srcH * 0.355);
-          const cropW = Math.round(srcW * 0.885);
-          const cropH = Math.round(srcH * 0.475);
+          /*
+            ป.303 แบบที่ผู้ใช้ส่งมามีตาราง 4 คอลัมน์
+            เราแยกเป็น 4 รูป แล้วส่งทั้ง 4 รูปใน API request เดียว
+            เพื่อให้ Gemini เห็นตัวเลขแต่ละคอลัมน์ใหญ่ขึ้น
+          */
+          const cropX = Math.round(srcW * 0.070);
+          const cropY = Math.round(srcH * 0.345);
+          const cropW = Math.round(srcW * 0.820);
+          const cropH = Math.round(srcH * 0.420);
 
-          const colGap = Math.round(cropW * 0.008);
+          const colGap = Math.max(1, Math.round(cropW * 0.008));
           const colW = Math.floor((cropW - colGap * 3) / 4);
 
-          const scale = Math.min(2.0, 3000 / Math.max(colW * 2, cropH * 2));
-          const cellW = Math.max(1, Math.round(colW * scale));
-          const cellH = Math.max(1, Math.round(cropH * scale));
-          const outW = cellW * 2;
-          const outH = cellH * 2;
+          if(colW < 20 || cropH < 50){
+            throw new Error('ขนาดรูปไม่เหมาะสำหรับอ่านตาราง');
+          }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = outW;
-          canvas.height = outH;
-          const ctx = canvas.getContext('2d');
+          const scale = 2.5;
+          const outW = Math.max(1, Math.round(colW * scale));
+          const outH = Math.max(1, Math.round(cropH * scale));
 
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, outW, outH);
+          const images = [];
 
-          // Slight contrast/sharpen-like preprocessing without changing
-          // the actual characters too aggressively.
-          const drawColumn = (columnIndex, destX, destY) => {
+          for(let columnIndex = 0; columnIndex < 4; columnIndex++){
             const sx = cropX + columnIndex * (colW + colGap);
             const sy = cropY;
+
             const temp = document.createElement('canvas');
             temp.width = colW;
             temp.height = cropH;
-            const tctx = temp.getContext('2d');
+
+            const tctx = temp.getContext('2d', { willReadFrequently: true });
+
             tctx.fillStyle = '#ffffff';
             tctx.fillRect(0, 0, colW, cropH);
-            tctx.drawImage(img, sx, sy, colW, cropH, 0, 0, colW, cropH);
 
+            tctx.drawImage(
+              img,
+              sx, sy, colW, cropH,
+              0, 0, colW, cropH
+            );
+
+            // Mild contrast adjustment. Do not over-process the printed digits.
             const pixels = tctx.getImageData(0, 0, colW, cropH);
             const d = pixels.data;
+
             for(let i = 0; i < d.length; i += 4){
-              d[i] = Math.min(255, Math.max(0, (d[i] - 128) * 1.10 + 128));
-              d[i+1] = Math.min(255, Math.max(0, (d[i+1] - 128) * 1.10 + 128));
-              d[i+2] = Math.min(255, Math.max(0, (d[i+2] - 128) * 1.10 + 128));
+              d[i]   = Math.min(255, Math.max(0, (d[i]   - 128) * 1.12 + 128));
+              d[i+1] = Math.min(255, Math.max(0, (d[i+1] - 128) * 1.12 + 128));
+              d[i+2] = Math.min(255, Math.max(0, (d[i+2] - 128) * 1.12 + 128));
             }
+
             tctx.putImageData(pixels, 0, 0);
 
-            ctx.drawImage(temp, 0, 0, colW, cropH, destX, destY, cellW, cellH);
-          };
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = outW;
+            outputCanvas.height = outH;
 
-          // Original sheet order: left -> right, then next row group.
-          drawColumn(0, 0, 0);
-          drawColumn(1, cellW, 0);
-          drawColumn(2, 0, cellH);
-          drawColumn(3, cellW, cellH);
+            const octx = outputCanvas.getContext('2d');
+            octx.fillStyle = '#ffffff';
+            octx.fillRect(0, 0, outW, outH);
 
-          const output = canvas.toDataURL('image/jpeg', 0.90);
+            octx.drawImage(
+              temp,
+              0, 0, colW, cropH,
+              0, 0, outW, outH
+            );
+
+            const dataUrlColumn = outputCanvas.toDataURL('image/jpeg', 0.88);
+            images.push(dataUrlColumn.split(',')[1]);
+          }
+
           resolve({
-            base64: output.split(',')[1],
+            images,
             mediaType: 'image/jpeg',
             dataUrl
           });
+
         }catch(e){
-          reject(new Error('แปลงไฟล์รูปภาพไม่สำเร็จ'));
+          reject(new Error(e.message || 'แปลงไฟล์รูปภาพไม่สำเร็จ'));
         }
       };
+
       img.src = reader.result;
     };
+
     reader.readAsDataURL(file);
   });
 }
 
-async function extractSheet(base64, mediaType){
+async function extractSheet(images, mediaType){
   const response = await fetch('/api/extract', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: base64, mediaType })
+    body: JSON.stringify({
+      images,
+      mediaType: mediaType || 'image/jpeg'
+    })
   });
 
   let data;
-  try{ data = await response.json(); }
-  catch(e){ throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'); }
+
+  try{
+    data = await response.json();
+  }catch(e){
+    throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง');
+  }
 
   if(!response.ok || data.error){
     throw new Error(data.error || 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ');
   }
+
   if(!data.items || data.items.length === 0){
     throw new Error('อ่านรูปแบบเลขพัสดุไม่สำเร็จ');
   }
+
   return data.items;
 }
 
 async function processFile(file){
   const id = 's' + Date.now() + Math.random().toString(36).slice(2,7);
-  const sheet = { id, filename: file.name || 'รูปที่อัปโหลด', status: 'scanning', items: [], thumbUrl: null, _file: file };
+
+  const sheet = {
+    id,
+    filename: file.name || 'รูปที่อัปโหลด',
+    status: 'scanning',
+    items: [],
+    thumbUrl: null,
+    _file: file
+  };
+
   sheets.push(sheet);
   render();
 
   try{
-    const { base64, mediaType, dataUrl } = await normalizeImage(file);
+    const { images, mediaType, dataUrl } = await normalizeImage(file);
+
     const target1 = sheets.find(s => s.id === id);
-    if(target1){ target1.thumbUrl = dataUrl; render(); }
-    const items = await extractSheet(base64, mediaType);
+    if(target1){
+      target1.thumbUrl = dataUrl;
+      render();
+    }
+
+    // ส่งภาพทั้ง 4 คอลัมน์ใน API request เดียว
+    const items = await extractSheet(images, mediaType);
+
     const target = sheets.find(s => s.id === id);
-    if(target){ target.status = 'done'; target.items = items; }
+
+    if(target){
+      target.status = 'done';
+      target.items = items;
+    }
+
   }catch(err){
     const target = sheets.find(s => s.id === id);
-    if(target){ target.status = 'error'; target.error = err.message || 'เกิดข้อผิดพลาด'; }
+
+    if(target){
+      target.status = 'error';
+      target.error = err.message || 'เกิดข้อผิดพลาด';
+    }
   }
+
   render();
 }
 
 function retrySheet(id){
   const s = sheets.find(x => x.id === id);
+
   if(!s || !s._file) return;
-  s.status = 'scanning'; s.error = null;
+
+  s.status = 'scanning';
+  s.error = null;
+
   render();
+
   (async () => {
     try{
-      const { base64, mediaType, dataUrl } = await normalizeImage(s._file);
+      const { images, mediaType, dataUrl } = await normalizeImage(s._file);
+
       s.thumbUrl = dataUrl;
-      const items = await extractSheet(base64, mediaType);
-      s.status = 'done'; s.items = items;
+
+      // ส่งภาพทั้ง 4 คอลัมน์ใน API request เดียว
+      const items = await extractSheet(images, mediaType);
+
+      s.status = 'done';
+      s.items = items;
+
     }catch(err){
-      s.status = 'error'; s.error = err.message || 'เกิดข้อผิดพลาด';
+      s.status = 'error';
+      s.error = err.message || 'เกิดข้อผิดพลาด';
     }
+
     render();
   })();
 }
