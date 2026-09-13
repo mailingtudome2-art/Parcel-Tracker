@@ -1,1431 +1,768 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ป.303 SCANNER — ค้นหาเลขพัสดุ</title>
+  <meta charset="UTF-8">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-<style>
-  :root{
-    --bg:#ffffff;
-    --panel:#ffffff;
-    --panel-2:#eef7ea;
-    --ink:#12291a;
-    --muted:#4c6152;
-    --orange:#1d7a3c;
-    --amber:#8a6d00;
-    --highlight:#ffdd33;
-    --line:#bfdcc2;
-    --danger:#c62828;
-    --good:#1d7a3c;
-  }
+  <title>ป.303 SCANNER</title>
 
-  *{box-sizing:border-box;}
+  <style>
 
-  html,body{
-    margin:0;
-    padding:0;
-  }
-
-  body{
-    background:
-      radial-gradient(1200px 600px at 90% -10%, #eef7ea 0%, transparent 60%),
-      var(--bg);
-    color:var(--ink);
-    font-family:'Inter',system-ui,sans-serif;
-    min-height:100vh;
-    -webkit-font-smoothing:antialiased;
-  }
-
-  @media (prefers-reduced-motion: reduce){
     *{
-      animation-duration:0.001ms !important;
-      transition-duration:0.001ms !important;
+      box-sizing:border-box;
     }
-  }
 
-  ::selection{
-    background:var(--highlight);
-    color:var(--ink);
-  }
-
-  :focus-visible{
-    outline:2px solid var(--orange);
-    outline-offset:2px;
-  }
-
-  .wrap{
-    max-width:880px;
-    margin:0 auto;
-    padding:28px 20px 80px;
-  }
-
-  header{
-    padding-bottom:18px;
-  }
-
-  .eyebrow{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin:0 0 8px;
-  }
-
-  h1{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:700;
-    font-size:clamp(28px,5vw,40px);
-    margin:0;
-    letter-spacing:-0.01em;
-    line-height:1.05;
-  }
-
-  h1 .doc{
-    color:var(--orange);
-  }
-
-  .sub{
-    color:var(--muted);
-    margin:10px 0 0;
-    font-size:14.5px;
-    max-width:52ch;
-  }
-
-  .barcode{
-    height:14px;
-    margin-top:20px;
-    background-image:repeating-linear-gradient(
-      90deg,
-      var(--line) 0 2px,
-      transparent 2px 5px,
-      var(--line) 5px 8px,
-      transparent 8px 11px,
-      var(--line) 11px 12px,
-      transparent 12px 18px
-    );
-    opacity:.9;
-  }
-
-  section{
-    margin-top:34px;
-  }
-
-  .label-row{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:12px;
-  }
-
-  .section-title{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:600;
-    font-size:14px;
-    letter-spacing:.02em;
-    color:var(--ink);
-    margin:0;
-  }
-
-  .count-tag{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    color:var(--muted);
-  }
-
-  .dropzone{
-    border:1.5px dashed var(--line);
-    border-radius:10px;
-    padding:26px 20px;
-    text-align:center;
-    background:var(--panel);
-    cursor:pointer;
-    transition:
-      border-color .15s ease,
-      background .15s ease;
-  }
-
-  .dropzone:hover,
-  .dropzone.drag{
-    border-color:var(--orange);
-    background:#e2f3e5;
-  }
-
-  #fileInput{
-    position:absolute;
-    width:1px;
-    height:1px;
-    padding:0;
-    margin:-1px;
-    overflow:hidden;
-    clip:rect(0,0,0,0);
-    white-space:nowrap;
-    border:0;
-  }
-
-  .dropzone{
-    user-select:none;
-  }
-
-  .dz-title{
-    font-weight:600;
-    font-size:15px;
-  }
-
-  .dz-sub{
-    color:var(--muted);
-    font-size:13px;
-    margin-top:4px;
-  }
-
-  .dz-icon{
-    width:34px;
-    height:34px;
-    margin:0 auto 10px;
-    border:1.5px solid var(--muted);
-    border-radius:7px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--muted);
-    font-size:18px;
-  }
-
-  .sheets{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .sheet-card{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:10px 12px;
-  }
-
-  .thumb{
-    width:46px;
-    height:46px;
-    border-radius:6px;
-    object-fit:cover;
-    background:var(--panel-2);
-    flex:none;
-    border:1px solid var(--line);
-  }
-
-  .thumb.placeholder{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--muted);
-    font-size:11px;
-    font-family:'IBM Plex Mono',monospace;
-  }
-
-  .sheet-meta{
-    flex:1;
-    min-width:0;
-  }
-
-  .sheet-name{
-    font-size:13.5px;
-    font-weight:500;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .sheet-status{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11.5px;
-    margin-top:2px;
-  }
-
-  .sheet-status.scanning{
-    color:var(--amber);
-  }
-
-  .sheet-status.done{
-    color:var(--good);
-  }
-
-  .sheet-status.error{
-    color:var(--danger);
-  }
-
-  .spinner{
-    width:11px;
-    height:11px;
-    border-radius:50%;
-    border:2px solid rgba(138,109,0,.25);
-    border-top-color:var(--amber);
-    display:inline-block;
-    margin-right:6px;
-    vertical-align:-1px;
-    animation:spin .7s linear infinite;
-  }
-
-  @keyframes spin{
-    to{
-      transform:rotate(360deg);
+    body{
+      margin:0;
+      font-family:
+        Arial,
+        "Noto Sans Thai",
+        sans-serif;
+      background:#f3f8f4;
+      color:#1f2937;
     }
-  }
 
-  .sheet-actions{
-    display:flex;
-    gap:6px;
-    flex:none;
-  }
+    .container{
+      width:min(1100px, 94%);
+      margin:30px auto;
+    }
 
-  .icon-btn{
-    background:transparent;
-    border:1px solid var(--line);
-    color:var(--muted);
-    border-radius:6px;
-    width:28px;
-    height:28px;
-    cursor:pointer;
-    font-size:13px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
+    .card{
+      background:#ffffff;
+      border-radius:18px;
+      padding:24px;
+      box-shadow:
+        0 8px 30px rgba(0,0,0,.08);
+      margin-bottom:20px;
+    }
 
-  .icon-btn:hover{
-    border-color:var(--orange);
-    color:var(--orange);
-  }
+    h1{
+      margin:0 0 8px;
+      color:#16834b;
+      font-size:30px;
+    }
 
-  .search-box{
-    position:relative;
-  }
+    .subtitle{
+      color:#6b7280;
+      margin-bottom:20px;
+    }
 
-  .search-box input{
-    width:100%;
-    background:var(--panel-2);
-    border:1.5px solid var(--line);
-    color:var(--ink);
-    border-radius:10px;
-    padding:16px 16px 16px 46px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:17px;
-    letter-spacing:.03em;
-  }
+    .upload-box{
+      border:2px dashed #72c59a;
+      background:#f4fff8;
+      border-radius:16px;
+      padding:30px;
+      text-align:center;
+      cursor:pointer;
+      transition:.2s;
+    }
 
-  .search-box input::placeholder{
-    color:var(--muted);
-    font-family:'Inter',sans-serif;
-    letter-spacing:normal;
-  }
+    .upload-box:hover{
+      background:#ebfff2;
+      border-color:#16834b;
+    }
 
-  .search-box .glyph{
-    position:absolute;
-    left:16px;
-    top:50%;
-    transform:translateY(-50%);
-    color:var(--muted);
-    font-size:16px;
-    pointer-events:none;
-  }
+    .upload-box input{
+      display:none;
+    }
 
-  .empty-hint{
-    color:var(--muted);
-    font-size:13px;
-    margin-top:10px;
-  }
+    .upload-icon{
+      font-size:42px;
+      margin-bottom:10px;
+    }
 
-  .results{
-    margin-top:14px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
+    .upload-title{
+      font-size:19px;
+      font-weight:bold;
+      color:#16834b;
+    }
 
-  .result-row{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:14px 16px;
-  }
+    .upload-subtitle{
+      color:#6b7280;
+      margin-top:6px;
+    }
 
-  .seq-badge{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:700;
-    font-size:15px;
-    color:var(--bg);
-    background:var(--ink);
-    border-radius:7px;
-    min-width:38px;
-    height:38px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex:none;
-  }
+    button{
+      border:0;
+      border-radius:10px;
+      padding:11px 18px;
+      font-size:15px;
+      cursor:pointer;
+      font-weight:bold;
+    }
 
-  .result-main{
-    flex:1;
-    min-width:0;
-  }
+    .btn-primary{
+      background:#16834b;
+      color:white;
+    }
 
-  .tracking-no{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:18px;
-    font-weight:500;
-    letter-spacing:.04em;
-    word-break:break-all;
-    color:var(--ink);
-  }
+    .btn-primary:hover{
+      background:#116b3d;
+    }
 
-  .tracking-no mark{
-    background:var(--highlight);
-    color:var(--ink);
-    font-weight:700;
-    padding:1px 3px;
-    border-radius:2px;
-    box-decoration-break:clone;
-    -webkit-box-decoration-break:clone;
-    transform:skew(-2deg);
-    display:inline-block;
-  }
+    .btn-secondary{
+      background:#e7f5ec;
+      color:#16834b;
+    }
 
-  .result-src{
-    color:var(--muted);
-    font-size:11.5px;
-    margin-top:3px;
-    font-family:'IBM Plex Mono',monospace;
-  }
+    .btn-danger{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
 
-  .no-results{
-    color:var(--muted);
-    font-size:14px;
-    padding:18px 4px;
-  }
+    button:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+    }
 
-  footer{
-    margin-top:46px;
-    padding-top:16px;
-    border-top:1px solid var(--line);
-    display:flex;
-    justify-content:space-between;
-    color:var(--muted);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11.5px;
-  }
-
-  @media (max-width:520px){
-    .sheet-card{
+    .actions{
+      display:flex;
       flex-wrap:wrap;
+      gap:10px;
+      margin-top:18px;
     }
-  }
-</style>
+
+    .status{
+      margin-top:18px;
+      padding:13px 15px;
+      border-radius:10px;
+      background:#f0fdf4;
+      color:#166534;
+      display:none;
+      white-space:pre-wrap;
+    }
+
+    .status.error{
+      background:#fef2f2;
+      color:#b91c1c;
+    }
+
+    .status.show{
+      display:block;
+    }
+
+    .progress-wrap{
+      margin-top:16px;
+      display:none;
+    }
+
+    .progress-wrap.show{
+      display:block;
+    }
+
+    .progress-bar{
+      width:100%;
+      height:12px;
+      background:#e5e7eb;
+      border-radius:20px;
+      overflow:hidden;
+    }
+
+    .progress-inner{
+      width:0%;
+      height:100%;
+      background:#16834b;
+      transition:width .25s;
+    }
+
+    .progress-text{
+      margin-top:8px;
+      font-size:14px;
+      color:#6b7280;
+    }
+
+    .summary{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .stat{
+      flex:1;
+      min-width:160px;
+      background:#f4fff8;
+      border:1px solid #d9f1e1;
+      border-radius:12px;
+      padding:15px;
+    }
+
+    .stat-label{
+      font-size:13px;
+      color:#6b7280;
+    }
+
+    .stat-value{
+      margin-top:5px;
+      font-size:25px;
+      font-weight:bold;
+      color:#16834b;
+    }
+
+    .search-row{
+      display:flex;
+      gap:10px;
+      margin-bottom:18px;
+    }
+
+    .search-row input{
+      flex:1;
+      min-width:0;
+      padding:13px 14px;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      font-size:16px;
+      outline:none;
+    }
+
+    .search-row input:focus{
+      border-color:#16834b;
+      box-shadow:
+        0 0 0 3px rgba(22,131,75,.1);
+    }
+
+    .result{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:14px 16px;
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:15px;
+      background:#fff;
+    }
+
+    .result-left{
+      min-width:0;
+    }
+
+    .seq{
+      display:inline-block;
+      min-width:45px;
+      font-weight:bold;
+      color:#16834b;
+    }
+
+    .tracking{
+      font-size:18px;
+      font-weight:bold;
+      letter-spacing:.5px;
+      word-break:break-all;
+    }
+
+    .sheet-name{
+      font-size:12px;
+      color:#9ca3af;
+      margin-top:5px;
+    }
+
+    .empty{
+      text-align:center;
+      color:#9ca3af;
+      padding:30px 10px;
+    }
+
+    .loading{
+      text-align:center;
+      padding:20px;
+      color:#16834b;
+      font-weight:bold;
+    }
+
+    .small{
+      font-size:13px;
+      color:#6b7280;
+    }
+
+    @media(max-width:650px){
+
+      .container{
+        width:94%;
+        margin:15px auto;
+      }
+
+      .card{
+        padding:17px;
+      }
+
+      h1{
+        font-size:25px;
+      }
+
+      .search-row{
+        flex-direction:column;
+      }
+
+      .search-row button{
+        width:100%;
+      }
+
+      .result{
+        align-items:flex-start;
+      }
+
+    }
+
+  </style>
 </head>
+
 
 <body>
 
-<div class="wrap">
+<div class="container">
 
-  <header>
-    <p class="eyebrow">บัญชีนำจ่าย · ป.303</p>
+  <!-- ==================================================
+       HEADER
+       ================================================== -->
 
-    <h1>
-      ป<span class="doc">.303</span> SCANNER
-    </h1>
+  <div class="card">
 
-    <p class="sub">
-      อัปโหลดรูปใบนำจ่าย แล้วพิมพ์เลขพัสดุบางส่วนเพื่อหาลำดับที่ในใบ
-      — ไม่ต้องไล่ตาทีละบรรทัด
-    </p>
+    <h1>📦 ป.303 SCANNER</h1>
 
-    <div class="barcode"></div>
-  </header>
-
-
-  <section>
-
-    <div class="label-row">
-      <p class="section-title">
-        01 — อัปโหลดใบนำจ่าย
-      </p>
-
-      <span class="count-tag" id="sheetCount">
-        0 ใบ
-      </span>
+    <div class="subtitle">
+      ระบบอ่านเลขพัสดุจากบัญชีนำจ่าย ป.303
     </div>
 
 
-    <div
-      class="dropzone"
-      id="dropzone"
-      tabindex="0"
-      role="button"
-      aria-label="อัปโหลดรูปใบนำจ่าย"
+    <!-- ==================================================
+         UPLOAD
+         ================================================== -->
+
+    <label
+      class="upload-box"
+      for="fileInput"
     >
 
-      <div class="dz-icon">＋</div>
-
-      <div class="dz-title">
-        ลากรูปมาวาง หรือแตะเพื่อเลือกไฟล์
+      <div class="upload-icon">
+        📷
       </div>
 
-      <div class="dz-sub">
-        อัปโหลดได้หลายรูป · JPG / PNG / HEIC
+      <div class="upload-title">
+        เลือกรูปภาพ ป.303
       </div>
 
-    </div>
-
-
-    <input
-      type="file"
-      id="fileInput"
-      accept="image/*"
-      multiple
-    >
-
-  </section>
-
-
-  <section id="sheetsSection" style="display:none;">
-
-    <div
-      class="sheets"
-      id="sheetsList"
-    ></div>
-
-  </section>
-
-
-  <section>
-
-    <div class="label-row">
-
-      <p class="section-title">
-        02 — ค้นหาเลขพัสดุ
-      </p>
-
-      <span
-        class="count-tag"
-        id="itemCount"
-      >
-        0 รายการ
-      </span>
-
-    </div>
-
-
-    <div class="search-box">
-
-      <span class="glyph">#</span>
+      <div class="upload-subtitle">
+        รองรับ JPG / JPEG / PNG
+      </div>
 
       <input
-        type="text"
-        id="searchInput"
-        placeholder="พิมพ์ตัวเลขบางส่วน เช่น 5193 หรือ 0161"
-        inputmode="numeric"
-        autocomplete="off"
+        id="fileInput"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
       >
 
+    </label>
+
+
+    <!-- ==================================================
+         ACTION BUTTONS
+         ================================================== -->
+
+    <div class="actions">
+
+      <button
+        id="readBtn"
+        class="btn-primary"
+        disabled
+      >
+        🔍 อ่านเลขพัสดุ
+      </button>
+
+      <button
+        id="clearBtn"
+        class="btn-secondary"
+      >
+        ล้างข้อมูล
+      </button>
+
     </div>
 
 
+    <!-- ==================================================
+         PROGRESS
+         ================================================== -->
+
     <div
-      id="emptyHint"
-      class="empty-hint"
+      id="progressWrap"
+      class="progress-wrap"
     >
-      ยังไม่มีข้อมูล — อัปโหลดใบนำจ่ายด้านบนก่อน
+
+      <div class="progress-bar">
+
+        <div
+          id="progressInner"
+          class="progress-inner"
+        ></div>
+
+      </div>
+
+      <div
+        id="progressText"
+        class="progress-text"
+      >
+        กำลังเตรียมรูปภาพ...
+      </div>
+
     </div>
 
 
+    <!-- ==================================================
+         STATUS
+         ================================================== -->
+
     <div
-      class="results"
-      id="results"
+      id="status"
+      class="status"
     ></div>
 
-  </section>
+  </div>
 
 
-  <footer>
+  <!-- ==================================================
+       RESULTS
+       ================================================== -->
 
-    <span id="footerLeft">
-      ยังไม่มีใบนำจ่าย
-    </span>
+  <div
+    id="resultCard"
+    class="card"
+    style="display:none;"
+  >
 
-    <span>
-      ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น
-    </span>
+    <div class="summary">
 
-  </footer>
+      <div class="stat">
+
+        <div class="stat-label">
+          จำนวนที่อ่านได้
+        </div>
+
+        <div
+          id="countValue"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+
+      <div class="stat">
+
+        <div class="stat-label">
+          สูงสุดที่รองรับ
+        </div>
+
+        <div class="stat-value">
+          100
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         SEARCH
+         ================================================== -->
+
+    <div class="search-row">
+
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="ค้นหาเลขพัสดุ เช่น 7161 หรือ WB368998512TH"
+      >
+
+      <button
+        id="searchBtn"
+        class="btn-primary"
+      >
+        🔎 ค้นหา
+      </button>
+
+    </div>
+
+
+    <div
+      id="searchResult"
+    ></div>
+
+
+    <!-- ==================================================
+         ALL ITEMS
+         ================================================== -->
+
+    <div
+      id="allResult"
+    ></div>
+
+  </div>
 
 </div>
 
 
 <script>
 
-const STORAGE_KEY = 'parcel-tracker-sheets-v1';
+
+// ======================================================
+// Global variables
+// ======================================================
+
+let selectedFile = null;
 
 let sheets = [];
 
 
-/* =========================================================
-   DOM
-========================================================= */
-
-const sheetsList =
-  document.getElementById('sheetsList');
-
-const sheetsSection =
-  document.getElementById('sheetsSection');
-
-const sheetCount =
-  document.getElementById('sheetCount');
-
-const itemCount =
-  document.getElementById('itemCount');
-
-const resultsEl =
-  document.getElementById('results');
-
-const emptyHint =
-  document.getElementById('emptyHint');
-
-const searchInput =
-  document.getElementById('searchInput');
-
-const footerLeft =
-  document.getElementById('footerLeft');
-
-const dropzone =
-  document.getElementById('dropzone');
+// ======================================================
+// DOM
+// ======================================================
 
 const fileInput =
   document.getElementById('fileInput');
 
+const readBtn =
+  document.getElementById('readBtn');
 
-/* =========================================================
-   ALL ITEMS
-========================================================= */
+const clearBtn =
+  document.getElementById('clearBtn');
 
-function allItems(){
+const statusBox =
+  document.getElementById('status');
 
-  const out = [];
+const progressWrap =
+  document.getElementById('progressWrap');
 
-  for(const s of sheets){
+const progressInner =
+  document.getElementById('progressInner');
 
-    if(s.status !== 'done'){
-      continue;
-    }
+const progressText =
+  document.getElementById('progressText');
 
-    for(const it of (s.items || [])){
+const resultCard =
+  document.getElementById('resultCard');
 
-      if(!it){
-        continue;
-      }
+const countValue =
+  document.getElementById('countValue');
 
-      const tracking =
-        it.tracking ||
-        it.tracking_number ||
-        '';
+const searchInput =
+  document.getElementById('searchInput');
 
-      const seq =
-        it.seq ??
-        it.sequence ??
-        '';
+const searchBtn =
+  document.getElementById('searchBtn');
 
-      if(!tracking){
-        continue;
-      }
+const searchResult =
+  document.getElementById('searchResult');
 
-      out.push({
-        seq: seq,
-        tracking: tracking,
-        sheetName: s.filename
-      });
+const allResult =
+  document.getElementById('allResult');
 
-    }
 
-  }
+// ======================================================
+// File selected
+// ======================================================
 
-  return out;
-}
+fileInput.addEventListener(
+  'change',
+  () => {
 
+    const file =
+      fileInput.files?.[0];
 
-/* =========================================================
-   DIGITS ONLY
-========================================================= */
-
-function digitsOnly(str){
-
-  return (str || '')
-    .replace(/[^0-9]/g, '');
-
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-function render(){
-
-  sheetsSection.style.display =
-    sheets.length ? 'block' : 'none';
-
-  sheetCount.textContent =
-    sheets.length + ' ใบ';
-
-  sheetsList.innerHTML = '';
-
-
-  for(const s of sheets){
-
-    const card =
-      document.createElement('div');
-
-    card.className =
-      'sheet-card';
-
-
-    const thumb =
-      document.createElement(
-        s.thumbUrl ? 'img' : 'div'
-      );
-
-    thumb.className =
-      'thumb' +
-      (s.thumbUrl ? '' : ' placeholder');
-
-
-    if(s.thumbUrl){
-
-      thumb.src =
-        s.thumbUrl;
-
-    }else{
-
-      thumb.textContent =
-        'IMG';
-
-    }
-
-
-    card.appendChild(thumb);
-
-
-    const meta =
-      document.createElement('div');
-
-    meta.className =
-      'sheet-meta';
-
-
-    const name =
-      document.createElement('div');
-
-    name.className =
-      'sheet-name';
-
-    name.textContent =
-      s.filename;
-
-    meta.appendChild(name);
-
-
-    const status =
-      document.createElement('div');
-
-
-    if(s.status === 'scanning'){
-
-      status.className =
-        'sheet-status scanning';
-
-      status.innerHTML =
-        '<span class="spinner"></span>กำลังอ่านเลขพัสดุ…';
-
-    }
-
-    else if(s.status === 'done'){
-
-      status.className =
-        'sheet-status done';
-
-      status.textContent =
-        'สำเร็จ — พบ ' +
-        (s.items || []).length +
-        ' รายการ';
-
-    }
-
-    else if(s.status === 'error'){
-
-      status.className =
-        'sheet-status error';
-
-      status.textContent =
-        'อ่านไม่สำเร็จ: ' +
-        (s.error || 'ลองใหม่อีกครั้ง');
-
-    }
-
-
-    meta.appendChild(status);
-
-    card.appendChild(meta);
-
-
-    const actions =
-      document.createElement('div');
-
-    actions.className =
-      'sheet-actions';
-
-
-    if(s.status === 'error'){
-
-      const retryBtn =
-        document.createElement('button');
-
-      retryBtn.className =
-        'icon-btn';
-
-      retryBtn.title =
-        'ลองใหม่';
-
-      retryBtn.textContent =
-        '↻';
-
-      retryBtn.onclick =
-        () => retrySheet(s.id);
-
-      actions.appendChild(retryBtn);
-
-    }
-
-
-    const delBtn =
-      document.createElement('button');
-
-    delBtn.className =
-      'icon-btn';
-
-    delBtn.title =
-      'ลบ';
-
-    delBtn.textContent =
-      '×';
-
-    delBtn.onclick =
-      () => removeSheet(s.id);
-
-    actions.appendChild(delBtn);
-
-
-    card.appendChild(actions);
-
-    sheetsList.appendChild(card);
-
-  }
-
-
-  const items =
-    allItems();
-
-  itemCount.textContent =
-    items.length + ' รายการ';
-
-  footerLeft.textContent =
-    sheets.length
-      ? (
-          'ใบนำจ่าย ' +
-          sheets.length +
-          ' ใบ · รวม ' +
-          items.length +
-          ' พัสดุ'
-        )
-      : 'ยังไม่มีใบนำจ่าย';
-
-
-  emptyHint.style.display =
-    items.length ? 'none' : 'block';
-
-
-  runSearch();
-
-  persist();
-
-}
-
-
-/* =========================================================
-   SAVE
-========================================================= */
-
-function persist(){
-
-  try{
-
-    const toSave =
-      sheets.map(s => ({
-
-        id: s.id,
-
-        filename: s.filename,
-
-        status:
-          s.status === 'scanning'
-            ? 'error'
-            : s.status,
-
-        error:
-          s.status === 'scanning'
-            ? 'ยกเลิกก่อนเสร็จ'
-            : s.error,
-
-        items:
-          s.items || []
-
-      }));
-
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(toSave)
-    );
-
-  }catch(e){
-
-    console.warn(
-      'บันทึกข้อมูลไม่ได้',
-      e
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   RESTORE
-========================================================= */
-
-function restore(){
-
-  try{
-
-    const raw =
-      localStorage.getItem(
-        STORAGE_KEY
-      );
-
-    if(!raw){
+    if(!file){
+      selectedFile = null;
+      readBtn.disabled = true;
       return;
     }
 
-    const parsed =
-      JSON.parse(raw);
+    selectedFile = file;
 
-    if(!Array.isArray(parsed)){
+    readBtn.disabled = false;
+
+    showStatus(
+      'เลือกรูปแล้ว: ' + file.name,
+      false
+    );
+
+  }
+);
+
+
+// ======================================================
+// Status
+// ======================================================
+
+function showStatus(message, isError = false){
+
+  statusBox.textContent =
+    message || '';
+
+  statusBox.className =
+    'status show' +
+    (isError ? ' error' : '');
+
+}
+
+
+// ======================================================
+// Progress
+// ======================================================
+
+function setProgress(percent, text){
+
+  progressWrap.classList.add('show');
+
+  progressInner.style.width =
+    Math.max(
+      0,
+      Math.min(100, percent)
+    ) + '%';
+
+  progressText.textContent =
+    text || '';
+
+}
+
+
+// ======================================================
+// Hide progress
+// ======================================================
+
+function hideProgress(){
+
+  progressWrap.classList.remove('show');
+
+}
+
+
+// ======================================================
+// Clear
+// ======================================================
+
+clearBtn.addEventListener(
+  'click',
+  () => {
+
+    selectedFile = null;
+
+    sheets = [];
+
+    fileInput.value = '';
+
+    readBtn.disabled = true;
+
+    resultCard.style.display =
+      'none';
+
+    searchInput.value = '';
+
+    searchResult.innerHTML =
+      '';
+
+    allResult.innerHTML =
+      '';
+
+    countValue.textContent =
+      '0';
+
+    statusBox.className =
+      'status';
+
+    statusBox.textContent =
+      '';
+
+    hideProgress();
+
+  }
+);
+
+
+// ======================================================
+// Read button
+// ======================================================
+
+readBtn.addEventListener(
+  'click',
+  async () => {
+
+    if(!selectedFile){
       return;
     }
 
-    sheets =
-      parsed.map(s => ({
-        ...s,
-        thumbUrl: null
-      }));
+    readBtn.disabled = true;
 
-  }catch(e){
+    try{
 
-    console.warn(
-      'โหลดข้อมูลเก่าไม่ได้',
-      e
-    );
+      await processFile(
+        selectedFile
+      );
 
-  }
+    }catch(error){
 
-}
+      console.error(error);
 
+      showStatus(
+        error?.message ||
+        'เกิดข้อผิดพลาด',
+        true
+      );
 
-/* =========================================================
-   REMOVE
-========================================================= */
+    }finally{
 
-function removeSheet(id){
+      readBtn.disabled = false;
 
-  sheets =
-    sheets.filter(
-      s => s.id !== id
-    );
-
-  render();
-
-}
-
-
-/* =========================================================
-   IMAGE CHECK
-========================================================= */
-
-function isLikelyImage(file){
-
-  if(file.type){
-
-    return file.type.startsWith(
-      'image/'
-    );
+    }
 
   }
-
-  return /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i
-    .test(file.name || '');
-
-}
+);
 
 
-/* =========================================================
-   NORMALIZE IMAGE
-========================================================= */
+// ======================================================
+// Load image
+// ======================================================
 
-function normalizeImage(file){
+function loadImage(file){
 
   return new Promise(
     (resolve, reject) => {
 
-      const reader =
-        new FileReader();
+      const img =
+        new Image();
+
+      const url =
+        URL.createObjectURL(file);
 
 
-      reader.onerror = () => {
+      img.onload =
+        () => {
 
-        reject(
-          new Error(
-            'อ่านไฟล์ไม่สำเร็จ'
-          )
-        );
+          URL.revokeObjectURL(url);
 
-      };
+          resolve(img);
 
-
-      reader.onload = () => {
-
-        const img =
-          new Image();
+        };
 
 
-        img.onerror = () => {
+      img.onerror =
+        () => {
+
+          URL.revokeObjectURL(url);
 
           reject(
             new Error(
-              'เปิดไฟล์รูปภาพนี้ไม่ได้'
+              'ไม่สามารถเปิดรูปภาพได้'
             )
           );
 
         };
 
 
-        img.onload = () => {
-
-          try{
-
-            const srcW =
-              img.naturalWidth ||
-              img.width;
-
-            const srcH =
-              img.naturalHeight ||
-              img.height;
-
-
-            /* -----------------------------------------
-               Thumbnail
-            ----------------------------------------- */
-
-            const thumbMax = 900;
-
-            const thumbScale =
-              Math.min(
-                1,
-                thumbMax /
-                Math.max(srcW, srcH)
-              );
-
-
-            const thumbW =
-              Math.max(
-                1,
-                Math.round(
-                  srcW * thumbScale
-                )
-              );
-
-            const thumbH =
-              Math.max(
-                1,
-                Math.round(
-                  srcH * thumbScale
-                )
-              );
-
-
-            const thumbCanvas =
-              document.createElement(
-                'canvas'
-              );
-
-            thumbCanvas.width =
-              thumbW;
-
-            thumbCanvas.height =
-              thumbH;
-
-
-            const thumbCtx =
-              thumbCanvas.getContext(
-                '2d'
-              );
-
-
-            thumbCtx.drawImage(
-              img,
-              0,
-              0,
-              thumbW,
-              thumbH
-            );
-
-
-            const dataUrl =
-              thumbCanvas.toDataURL(
-                'image/jpeg',
-                0.82
-              );
-
-
-            /* -----------------------------------------
-               ป.303
-               ตาราง 4 คอลัมน์
-            ----------------------------------------- */
-
-            const cropX =
-              Math.round(
-                srcW * 0.070
-              );
-
-            const cropY =
-              Math.round(
-                srcH * 0.345
-              );
-
-            const cropW =
-              Math.round(
-                srcW * 0.820
-              );
-
-            const cropH =
-              Math.round(
-                srcH * 0.420
-              );
-
-
-            const colGap =
-              Math.max(
-                1,
-                Math.round(
-                  cropW * 0.008
-                )
-              );
-
-
-            const colW =
-              Math.floor(
-                (
-                  cropW -
-                  colGap * 3
-                ) / 4
-              );
-
-
-            if(
-              colW < 20 ||
-              cropH < 50
-            ){
-
-              throw new Error(
-                'ขนาดรูปไม่เหมาะสำหรับอ่านตาราง'
-              );
-
-            }
-
-
-            /*
-              เดิม 2.5
-              ลดเป็น 2.2 เพื่อให้ request
-              เล็กลง แต่ยังคงความละเอียดสูง
-            */
-
-            const scale = 1.6;
-
-
-            const outW =
-              Math.max(
-                1,
-                Math.round(
-                  colW * scale
-                )
-              );
-
-            const outH =
-              Math.max(
-                1,
-                Math.round(
-                  cropH * scale
-                )
-              );
-
-
-            const images = [];
-
-
-            for(
-              let columnIndex = 0;
-              columnIndex < 4;
-              columnIndex++
-            ){
-
-              const sx =
-                cropX +
-                columnIndex *
-                (colW + colGap);
-
-              const sy =
-                cropY;
-
-
-              const temp =
-                document.createElement(
-                  'canvas'
-                );
-
-              temp.width =
-                colW;
-
-              temp.height =
-                cropH;
-
-
-              const tctx =
-                temp.getContext(
-                  '2d',
-                  {
-                    willReadFrequently:true
-                  }
-                );
-
-
-              tctx.fillStyle =
-                '#ffffff';
-
-              tctx.fillRect(
-                0,
-                0,
-                colW,
-                cropH
-              );
-
-
-              tctx.drawImage(
-                img,
-                sx,
-                sy,
-                colW,
-                cropH,
-                0,
-                0,
-                colW,
-                cropH
-              );
-
-
-              /* -----------------------------------------
-                 Mild contrast
-              ----------------------------------------- */
-
-              const pixels =
-                tctx.getImageData(
-                  0,
-                  0,
-                  colW,
-                  cropH
-                );
-
-              const d =
-                pixels.data;
-
-
-              for(
-                let i = 0;
-                i < d.length;
-                i += 4
-              ){
-
-                d[i] =
-                  Math.min(
-                    255,
-                    Math.max(
-                      0,
-                      (
-                        d[i] - 128
-                      ) * 1.12 + 128
-                    )
-                  );
-
-
-                d[i+1] =
-                  Math.min(
-                    255,
-                    Math.max(
-                      0,
-                      (
-                        d[i+1] - 128
-                      ) * 1.12 + 128
-                    )
-                  );
-
-
-                d[i+2] =
-                  Math.min(
-                    255,
-                    Math.max(
-                      0,
-                      (
-                        d[i+2] - 128
-                      ) * 1.12 + 128
-                    )
-                  );
-
-              }
-
-
-              tctx.putImageData(
-                pixels,
-                0,
-                0
-              );
-
-
-              /* -----------------------------------------
-                 Scale up
-              ----------------------------------------- */
-
-              const outputCanvas =
-                document.createElement(
-                  'canvas'
-                );
-
-              outputCanvas.width =
-                outW;
-
-              outputCanvas.height =
-                outH;
-
-
-              const octx =
-                outputCanvas.getContext(
-                  '2d'
-                );
-
-
-              octx.fillStyle =
-                '#ffffff';
-
-              octx.fillRect(
-                0,
-                0,
-                outW,
-                outH
-              );
-
-
-              octx.drawImage(
-                temp,
-                0,
-                0,
-                colW,
-                cropH,
-                0,
-                0,
-                outW,
-                outH
-              );
-
-
-              /*
-                ลด JPEG quality จาก .88
-                เป็น .78
-                เพื่อลด payload
-              */
-
-              const dataUrlColumn =
-                outputCanvas.toDataURL(
-                  'image/jpeg',
-                  0.60
-                );
-
-
-              images.push(
-                dataUrlColumn.split(',')[1]
-              );
-
-            }
-
-
-            resolve({
-
-              images,
-
-              mediaType:
-                'image/jpeg',
-
-              dataUrl
-
-            });
-
-
-          }catch(e){
-
-            reject(
-              new Error(
-                e.message ||
-                'แปลงไฟล์รูปภาพไม่สำเร็จ'
-              )
-            );
-
-          }
-
-        };
-
-
-        img.src =
-          reader.result;
-
-      };
-
-
-      reader.readAsDataURL(
-        file
-      );
+      img.src =
+        url;
 
     }
   );
@@ -1433,185 +770,421 @@ function normalizeImage(file){
 }
 
 
-/* =========================================================
-   EXTRACT SHEET
-   แก้จุดสำคัญตรงนี้
-========================================================= */
+// ======================================================
+// Normalize image
+//
+// แบ่งภาพออกเป็น 4 คอลัมน์
+// เพื่อส่ง Gemini ทีละคอลัมน์
+// ======================================================
+
+async function normalizeImage(file){
+
+  const img =
+    await loadImage(file);
+
+
+  const srcW =
+    img.naturalWidth ||
+    img.width;
+
+  const srcH =
+    img.naturalHeight ||
+    img.height;
+
+
+  if(
+    !srcW ||
+    !srcH
+  ){
+
+    throw new Error(
+      'ไม่สามารถอ่านขนาดรูปภาพได้'
+    );
+
+  }
+
+
+  // ----------------------------------------------------
+  // Crop ส่วนตาราง ป.303
+  // ----------------------------------------------------
+
+  const cropX =
+    Math.round(srcW * 0.070);
+
+  const cropY =
+    Math.round(srcH * 0.345);
+
+  const cropW =
+    Math.round(srcW * 0.820);
+
+  const cropH =
+    Math.round(srcH * 0.420);
+
+
+  // ----------------------------------------------------
+  // ช่องว่างระหว่างคอลัมน์
+  // ----------------------------------------------------
+
+  const colGap =
+    Math.max(
+      1,
+      Math.round(cropW * 0.008)
+    );
+
+
+  const colW =
+    Math.floor(
+      (
+        cropW -
+        colGap * 3
+      ) / 4
+    );
+
+
+  // ----------------------------------------------------
+  // Scale
+  // ----------------------------------------------------
+
+  const scale =
+    2.0;
+
+
+  const images = [];
+
+
+  // ----------------------------------------------------
+  // ทำทีละ 4 คอลัมน์
+  // ----------------------------------------------------
+
+  for(
+    let columnIndex = 0;
+    columnIndex < 4;
+    columnIndex++
+  ){
+
+    const sx =
+      cropX +
+      columnIndex *
+      (colW + colGap);
+
+
+    const sy =
+      cropY;
+
+
+    const sw =
+      colW;
+
+
+    const sh =
+      cropH;
+
+
+    const outputCanvas =
+      document.createElement(
+        'canvas'
+      );
+
+
+    outputCanvas.width =
+      Math.max(
+        1,
+        Math.round(sw * scale)
+      );
+
+
+    outputCanvas.height =
+      Math.max(
+        1,
+        Math.round(sh * scale)
+      );
+
+
+    const ctx =
+      outputCanvas.getContext(
+        '2d',
+        {
+          alpha:false
+        }
+      );
+
+
+    ctx.imageSmoothingEnabled =
+      true;
+
+
+    ctx.imageSmoothingQuality =
+      'high';
+
+
+    ctx.drawImage(
+
+      img,
+
+      sx,
+      sy,
+      sw,
+      sh,
+
+      0,
+      0,
+
+      outputCanvas.width,
+      outputCanvas.height
+
+    );
+
+
+    // --------------------------------------------------
+    // JPEG 0.70
+    // --------------------------------------------------
+
+    const dataUrl =
+      outputCanvas.toDataURL(
+        'image/jpeg',
+        0.70
+      );
+
+
+    images.push(
+      dataUrl.split(',')[1]
+    );
+
+  }
+
+
+  return {
+
+    images,
+
+    mediaType:
+      'image/jpeg',
+
+    dataUrl:
+      null
+
+  };
+
+}
+
+
+// ======================================================
+// Extract sheet
+//
+// ส่ง Gemini ทีละคอลัมน์
+// ไม่ส่ง 4 รูปพร้อมกัน
+// ======================================================
 
 async function extractSheet(
   images,
   mediaType
 ){
 
-  let response;
+  const allItems = [];
 
-  try{
 
-    response =
-      await fetch(
-        '/api/extract',
-        {
-          method:'POST',
+  // ----------------------------------------------------
+  // อ่านทีละคอลัมน์
+  // ----------------------------------------------------
 
-          headers:{
-            'Content-Type':
-              'application/json'
-          },
+  for(
+    let columnIndex = 0;
+    columnIndex < images.length;
+    columnIndex++
+  ){
 
-          body:
-            JSON.stringify({
+    setProgress(
+      10 +
+      (
+        columnIndex /
+        images.length
+      ) * 75,
 
-              images,
-
-              mediaType:
-                mediaType ||
-                'image/jpeg'
-
-            })
-        }
-      );
-
-  }catch(e){
-
-    throw new Error(
-      'เชื่อมต่อ /api/extract ไม่ได้: ' +
-      (e.message || '')
+      'กำลังอ่านคอลัมน์ ' +
+      (columnIndex + 1) +
+      ' / ' +
+      images.length +
+      ' ...'
     );
 
-  }
+
+    let response;
 
 
-  /*
-    อ่านเป็น text ก่อน
-    เพื่อไม่ให้ JSON parse error
-    กลบ error จริง
-  */
+    try{
 
-  const raw =
-    await response.text();
+      response =
+        await fetch(
+          '/api/extract',
+          {
+
+            method:
+              'POST',
+
+            headers:{
+              'Content-Type':
+                'application/json'
+            },
+
+            body:
+              JSON.stringify({
+
+                image:
+                  images[columnIndex],
+
+                mediaType:
+                  mediaType ||
+                  'image/jpeg',
+
+                columnIndex
+
+              })
+
+          }
+        );
 
 
-  console.log(
-    'API STATUS:',
-    response.status
-  );
-
-  console.log(
-    'API CONTENT TYPE:',
-    response.headers.get(
-      'content-type'
-    )
-  );
-
-  console.log(
-    'API RESPONSE:',
-    raw
-  );
-
-
-  /* -----------------------------------------
-     HTTP error
-  ----------------------------------------- */
-
-  if(!response.ok){
-
-    if(response.status === 413){
+    }catch(e){
 
       throw new Error(
-        'ไฟล์รูปใหญ่เกินไป (HTTP 413) — กรุณาลองรูปที่ความละเอียดต่ำลง'
+        'เชื่อมต่อ /api/extract ไม่ได้: ' +
+        (
+          e.message ||
+          ''
+        )
       );
 
     }
 
-    if(response.status === 404){
+
+    const raw =
+      await response.text();
+
+
+    console.log(
+      'COLUMN',
+      columnIndex + 1,
+      'STATUS:',
+      response.status
+    );
+
+
+    console.log(
+      'COLUMN',
+      columnIndex + 1,
+      'RESPONSE:',
+      raw
+    );
+
+
+    // --------------------------------------------------
+    // Error
+    // --------------------------------------------------
+
+    if(!response.ok){
+
+      if(
+        response.status === 413
+      ){
+
+        throw new Error(
+          'รูปคอลัมน์ที่ ' +
+          (columnIndex + 1) +
+          ' ใหญ่เกินไป (HTTP 413)'
+        );
+
+      }
+
+
+      if(
+        response.status === 429
+      ){
+
+        throw new Error(
+          'Gemini จำกัดจำนวนคำขอชั่วคราว (HTTP 429)'
+        );
+
+      }
+
+
+      if(
+        response.status === 404
+      ){
+
+        throw new Error(
+          'ไม่พบ /api/extract (HTTP 404)'
+        );
+
+      }
+
+
+      if(
+        response.status === 500
+      ){
+
+        throw new Error(
+          'Server Error (HTTP 500): ' +
+          raw.slice(0,500)
+        );
+
+      }
+
 
       throw new Error(
-        'ไม่พบ /api/extract (HTTP 404) — ตรวจสอบว่าไฟล์ api/extract.js อยู่ใน GitHub'
-      );
-
-    }
-
-    if(response.status === 500){
-
-      throw new Error(
-        'Server Error (HTTP 500): ' +
+        'Server HTTP ' +
+        response.status +
+        ': ' +
         raw.slice(0,500)
       );
 
     }
 
-    throw new Error(
-      'Server HTTP ' +
-      response.status +
-      ': ' +
-      raw.slice(0,500)
-    );
 
-  }
+    // --------------------------------------------------
+    // JSON
+    // --------------------------------------------------
+
+    let data;
 
 
-  /* -----------------------------------------
-     Parse JSON
-  ----------------------------------------- */
+    try{
 
-  let data;
+      data =
+        JSON.parse(raw);
 
-  try{
+    }catch(e){
 
-    data =
-      JSON.parse(raw);
+      throw new Error(
+        'เซิร์ฟเวอร์ส่งข้อมูลไม่ใช่ JSON: ' +
+        raw.slice(0,500)
+      );
 
-  }catch(e){
-
-    throw new Error(
-      'เซิร์ฟเวอร์ส่งข้อมูลไม่ใช่ JSON: ' +
-      raw.slice(0,500)
-    );
-
-  }
+    }
 
 
-  /* -----------------------------------------
-     Backend error
-  ----------------------------------------- */
+    if(data.error){
 
-  if(data.error){
+      throw new Error(
+        data.error
+      );
 
-    throw new Error(
-      data.error
-    );
-
-  }
+    }
 
 
-  if(
-    !data.items ||
-    !Array.isArray(data.items)
-  ){
+    // --------------------------------------------------
+    // Items
+    // --------------------------------------------------
 
-    throw new Error(
-      'เซิร์ฟเวอร์ไม่ส่งรายการเลขพัสดุกลับมา'
-    );
+    if(
+      data.items &&
+      Array.isArray(
+        data.items
+      )
+    ){
 
-  }
-
-
-  if(data.items.length === 0){
-
-    throw new Error(
-      'อ่านเลขพัสดุไม่สำเร็จ — Gemini ไม่พบเลขที่ตรงรูปแบบ'
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     Normalize frontend format
-  ----------------------------------------- */
-
-  const normalized =
-    data.items
-      .map(it => {
+      for(
+        const it of data.items
+      ){
 
         const tracking =
           (
@@ -1630,24 +1203,134 @@ async function extractSheet(
           '';
 
 
-        return {
-          seq,
-          tracking
-        };
+        if(tracking){
 
-      })
-      .filter(
-        it => it.tracking
+          allItems.push({
+
+            seq,
+
+            tracking
+
+          });
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  // ====================================================
+  // รวมรายการจาก 4 คอลัมน์
+  // ====================================================
+
+  const seenSeq =
+    new Set();
+
+
+  const seenTracking =
+    new Set();
+
+
+  const normalized = [];
+
+
+  for(
+    const item of allItems
+  ){
+
+    const seq =
+      parseInt(
+        item.seq,
+        10
       );
 
 
-  if(normalized.length === 0){
+    const tracking =
+      item.tracking;
+
+
+    if(
+      !Number.isInteger(seq) ||
+      seq < 1 ||
+      seq > 100
+    ){
+
+      continue;
+
+    }
+
+
+    if(!tracking){
+
+      continue;
+
+    }
+
+
+    if(
+      seenSeq.has(seq)
+    ){
+
+      continue;
+
+    }
+
+
+    if(
+      seenTracking.has(tracking)
+    ){
+
+      continue;
+
+    }
+
+
+    seenSeq.add(seq);
+
+    seenTracking.add(
+      tracking
+    );
+
+
+    normalized.push({
+
+      seq,
+
+      tracking
+
+    });
+
+  }
+
+
+  // ----------------------------------------------------
+  // เรียงตาม sequence
+  // ----------------------------------------------------
+
+  normalized.sort(
+    (a,b) =>
+      a.seq - b.seq
+  );
+
+
+  if(
+    normalized.length === 0
+  ){
 
     throw new Error(
-      'เซิร์ฟเวอร์ส่งข้อมูลมา แต่ไม่พบเลขพัสดุที่ใช้งานได้'
+      'อ่านเลขพัสดุไม่สำเร็จ — Gemini ไม่พบเลขที่ตรงรูปแบบ'
     );
 
   }
+
+
+  console.log(
+    'TOTAL OCR ITEMS:',
+    normalized.length
+  );
 
 
   return normalized;
@@ -1655,363 +1338,326 @@ async function extractSheet(
 }
 
 
-/* =========================================================
-   PROCESS FILE
-========================================================= */
+// ======================================================
+// Process file
+// ======================================================
 
 async function processFile(file){
 
-  const id =
-    's' +
-    Date.now() +
-    Math.random()
-      .toString(36)
-      .slice(2,7);
+  showStatus(
+    'กำลังเตรียมรูปภาพ...',
+    false
+  );
 
 
-  const sheet = {
-
-    id,
-
-    filename:
-      file.name ||
-      'รูปที่อัปโหลด',
-
-    status:
-      'scanning',
-
-    items:[],
-
-    thumbUrl:null,
-
-    _file:file
-
-  };
+  setProgress(
+    5,
+    'กำลังเตรียมรูปภาพ...'
+  );
 
 
-  sheets.push(sheet);
+  // ----------------------------------------------------
+  // Normalize
+  // ----------------------------------------------------
 
-  render();
+  const {
+    images,
+    mediaType
+  } =
+    await normalizeImage(
+      file
+    );
 
 
-  try{
+  if(
+    !images ||
+    !images.length
+  ){
 
-    const {
+    throw new Error(
+      'ไม่สามารถแบ่งภาพเป็นคอลัมน์ได้'
+    );
+
+  }
+
+
+  // ----------------------------------------------------
+  // OCR
+  // ----------------------------------------------------
+
+  const items =
+    await extractSheet(
       images,
-      mediaType,
-      dataUrl
-    } =
-      await normalizeImage(
-        file
-      );
-
-
-    const target1 =
-      sheets.find(
-        s => s.id === id
-      );
-
-
-    if(target1){
-
-      target1.thumbUrl =
-        dataUrl;
-
-      render();
-
-    }
-
-
-    const items =
-      await extractSheet(
-        images,
-        mediaType
-      );
-
-
-    const target =
-      sheets.find(
-        s => s.id === id
-      );
-
-
-    if(target){
-
-      target.status =
-        'done';
-
-      target.items =
-        items;
-
-    }
-
-
-  }catch(err){
-
-    console.error(
-      'OCR ERROR:',
-      err
+      mediaType
     );
 
 
-    const target =
-      sheets.find(
-        s => s.id === id
-      );
+  // ----------------------------------------------------
+  // Save
+  // ----------------------------------------------------
 
+  sheets = [
 
-    if(target){
+    {
 
-      target.status =
-        'error';
+      name:
+        file.name,
 
-      target.error =
-        err.message ||
-        'เกิดข้อผิดพลาด';
+      items
 
     }
 
-  }
+  ];
 
 
-  render();
+  // ----------------------------------------------------
+  // Finish
+  // ----------------------------------------------------
 
-}
-
-
-/* =========================================================
-   RETRY
-========================================================= */
-
-function retrySheet(id){
-
-  const s =
-    sheets.find(
-      x => x.id === id
-    );
+  setProgress(
+    100,
+    'อ่านเสร็จแล้ว'
+  );
 
 
-  if(!s || !s._file){
-
-    return;
-  }
-
-
-  s.status =
-    'scanning';
-
-  s.error =
-    null;
+  showStatus(
+    'อ่านเสร็จแล้ว พบ ' +
+    items.length +
+    ' รายการ',
+    false
+  );
 
 
-  render();
+  renderResults();
 
 
-  (async () => {
-
-    try{
-
-      const {
-        images,
-        mediaType,
-        dataUrl
-      } =
-        await normalizeImage(
-          s._file
-        );
-
-
-      s.thumbUrl =
-        dataUrl;
-
-
-      const items =
-        await extractSheet(
-          images,
-          mediaType
-        );
-
-
-      s.status =
-        'done';
-
-      s.items =
-        items;
-
-
-    }catch(err){
-
-      console.error(
-        'OCR RETRY ERROR:',
-        err
-      );
-
-
-      s.status =
-        'error';
-
-      s.error =
-        err.message ||
-        'เกิดข้อผิดพลาด';
-
-    }
-
-
-    render();
-
-  })();
-
-}
-
-
-/* =========================================================
-   HANDLE FILES
-========================================================= */
-
-function handleFiles(
-  fileList
-){
-
-  const files =
-    Array.from(
-      fileList
-    )
-    .filter(
-      isLikelyImage
-    );
-
-
-  files.forEach(
-    processFile
+  setTimeout(
+    () => {
+      hideProgress();
+    },
+    700
   );
 
 }
 
 
-/* =========================================================
-   FILE INPUT
-========================================================= */
+// ======================================================
+// Get all items
+// ======================================================
 
-fileInput.addEventListener(
-  'change',
-  e => {
+function allItems(){
 
-    handleFiles(
-      e.target.files
-    );
-
-    fileInput.value =
-      '';
-
-  }
-);
+  const result = [];
 
 
-/* =========================================================
-   DROPZONE
-========================================================= */
+  for(
+    const sheet of sheets
+  ){
 
-dropzone.addEventListener(
-  'click',
-  () => fileInput.click()
-);
-
-
-dropzone.addEventListener(
-  'keydown',
-  e => {
-
-    if(
-      e.key === 'Enter' ||
-      e.key === ' '
+    for(
+      const it of (
+        sheet.items || []
+      )
     ){
 
-      e.preventDefault();
-
-      fileInput.click();
-
-    }
-
-  }
-);
-
-
-['dragenter','dragover']
-.forEach(evt => {
-
-  dropzone.addEventListener(
-    evt,
-    e => {
-
-      e.preventDefault();
-
-      dropzone.classList.add(
-        'drag'
-      );
-
-    }
-  );
-
-});
+      const tracking =
+        (
+          it.tracking ||
+          it.tracking_number ||
+          ''
+        )
+        .toString()
+        .trim()
+        .toUpperCase();
 
 
-['dragleave','drop']
-.forEach(evt => {
-
-  dropzone.addEventListener(
-    evt,
-    e => {
-
-      e.preventDefault();
-
-      dropzone.classList.remove(
-        'drag'
-      );
-
-    }
-  );
-
-});
+      const seq =
+        it.seq ??
+        it.sequence ??
+        '';
 
 
-dropzone.addEventListener(
-  'drop',
-  e => {
+      if(!tracking){
 
-    if(
-      e.dataTransfer &&
-      e.dataTransfer.files
-    ){
+        continue;
 
-      handleFiles(
-        e.dataTransfer.files
-      );
+      }
+
+
+      result.push({
+
+        seq,
+
+        tracking,
+
+        sheetName:
+          sheet.name
+
+      });
 
     }
 
   }
-);
 
 
-/* =========================================================
-   SEARCH
-========================================================= */
+  return result;
 
-function runSearch(){
-
-  const q =
-    digitsOnly(
-      searchInput.value.trim()
-    );
+}
 
 
-  resultsEl.innerHTML =
+// ======================================================
+// Render results
+// ======================================================
+
+function renderResults(){
+
+  const items =
+    allItems();
+
+
+  resultCard.style.display =
+    'block';
+
+
+  countValue.textContent =
+    items.length;
+
+
+  searchResult.innerHTML =
     '';
 
 
-  if(!q){
+  renderAllItems(
+    items
+  );
+
+}
+
+
+// ======================================================
+// Render all items
+// ======================================================
+
+function renderAllItems(
+  items
+){
+
+  if(!items.length){
+
+    allResult.innerHTML = `
+      <div class="empty">
+        ยังไม่มีข้อมูล
+      </div>
+    `;
 
     return;
+
+  }
+
+
+  let html = '';
+
+
+  for(
+    const item of items
+  ){
+
+    html += `
+
+      <div class="result">
+
+        <div class="result-left">
+
+          <div>
+
+            <span class="seq">
+              #${escapeHtml(
+                item.seq
+              )}
+            </span>
+
+            <span class="tracking">
+              ${escapeHtml(
+                item.tracking
+              )}
+            </span>
+
+          </div>
+
+          <div class="sheet-name">
+            ${escapeHtml(
+              item.sheetName
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+
+  allResult.innerHTML =
+    html;
+
+}
+
+
+// ======================================================
+// Search button
+// ======================================================
+
+searchBtn.addEventListener(
+  'click',
+  runSearch
+);
+
+
+// ======================================================
+// Search Enter
+// ======================================================
+
+searchInput.addEventListener(
+  'keydown',
+  event => {
+
+    if(
+      event.key === 'Enter'
+    ){
+
+      runSearch();
+
+    }
+
+  }
+);
+
+
+// ======================================================
+// Search
+// ======================================================
+
+function runSearch(){
+
+  const query =
+    searchInput.value
+      .trim()
+      .toUpperCase();
+
+
+  if(!query){
+
+    searchResult.innerHTML =
+      '';
+
+    renderAllItems(
+      allItems()
+    );
+
+    return;
+
   }
 
 
@@ -2019,250 +1665,281 @@ function runSearch(){
     allItems();
 
 
+  const numericQuery =
+    digitsOnly(
+      query
+    );
+
+
   const matches =
     items.filter(
-      it => {
+      item => {
 
-        const trackingDigits =
+        const tracking =
+          item.tracking
+            .toUpperCase();
+
+
+        const numericTracking =
           digitsOnly(
-            it.tracking
+            tracking
           );
 
 
+        // ------------------------------------------------
+        // รองรับ:
+        // 7161
+        // WB368998512TH
+        // WB 3689...
+        // ------------------------------------------------
+
         return (
-          trackingDigits.includes(q) ||
-          it.tracking.includes(
-            q.toUpperCase()
+
+          tracking.includes(
+            query
           )
+
+          ||
+
+          (
+            numericQuery &&
+            numericTracking.includes(
+              numericQuery
+            )
+          )
+
         );
 
       }
     );
 
 
-  if(matches.length === 0){
+  if(!matches.length){
 
-    const div =
-      document.createElement(
-        'div'
-      );
+    searchResult.innerHTML = `
 
-    div.className =
-      'no-results';
+      <div class="empty">
 
-    div.textContent =
-      'ไม่พบเลขพัสดุที่ตรงกับ "' +
-      searchInput.value.trim() +
-      '"';
+        ไม่พบเลขพัสดุ
+        <br>
 
-    resultsEl.appendChild(
-      div
-    );
+        <span class="small">
+          ค้นหา: ${escapeHtml(query)}
+        </span>
+
+      </div>
+
+    `;
 
     return;
 
   }
 
 
-  for(const m of matches){
+  let html = `
 
-    const row =
-      document.createElement(
-        'div'
-      );
+    <div
+      class="small"
+      style="margin-bottom:10px;"
+    >
+      พบ ${matches.length} รายการ
+    </div>
 
-    row.className =
-      'result-row';
-
-
-    const badge =
-      document.createElement(
-        'div'
-      );
-
-    badge.className =
-      'seq-badge';
-
-    badge.textContent =
-      m.seq;
-
-    row.appendChild(
-      badge
-    );
+  `;
 
 
-    const main =
-      document.createElement(
-        'div'
-      );
+  for(
+    const item of matches
+  ){
 
-    main.className =
-      'result-main';
+    html += `
 
+      <div class="result">
 
-    const trackEl =
-      document.createElement(
-        'div'
-      );
+        <div class="result-left">
 
-    trackEl.className =
-      'tracking-no';
+          <div>
 
+            <span class="seq">
+              #${escapeHtml(
+                item.seq
+              )}
+            </span>
 
-    trackEl.innerHTML =
-      highlightMatch(
-        m.tracking,
-        q
-      );
+            <span class="tracking">
+              ${highlightMatch(
+                item.tracking,
+                query
+              )}
+            </span>
 
+          </div>
 
-    main.appendChild(
-      trackEl
-    );
+          <div class="sheet-name">
+            ${escapeHtml(
+              item.sheetName
+            )}
+          </div>
 
+        </div>
 
-    const src =
-      document.createElement(
-        'div'
-      );
+      </div>
 
-    src.className =
-      'result-src';
-
-    src.textContent =
-      'จาก ' +
-      m.sheetName;
-
-
-    main.appendChild(
-      src
-    );
-
-
-    row.appendChild(
-      main
-    );
-
-
-    resultsEl.appendChild(
-      row
-    );
+    `;
 
   }
+
+
+  searchResult.innerHTML =
+    html;
 
 }
 
 
-/* =========================================================
-   HIGHLIGHT
-========================================================= */
+// ======================================================
+// Digits only
+// ======================================================
+
+function digitsOnly(value){
+
+  return String(
+    value || ''
+  ).replace(
+    /[^0-9]/g,
+    ''
+  );
+
+}
+
+
+// ======================================================
+// Highlight search
+// ======================================================
 
 function highlightMatch(
   tracking,
   query
 ){
 
-  const digits =
-    digitsOnly(
+  const safeTracking =
+    escapeHtml(
       tracking
     );
 
 
-  const idx =
-    digits.indexOf(
+  const safeQuery =
+    escapeHtml(
       query
     );
 
 
-  if(idx === -1){
+  // Full tracking search
+  if(
+    query &&
+    tracking.includes(
+      query
+    )
+  ){
 
-    return escapeHtml(
-      tracking
+    return safeTracking.replace(
+      new RegExp(
+        escapeRegex(
+          safeQuery
+        ),
+        'gi'
+      ),
+      match =>
+        `<mark>${match}</mark>`
     );
 
   }
 
 
-  /*
-    สำหรับเลขพัสดุที่เป็น
-    XX123456789TH
-    ตำแหน่งตัวเลขใน tracking
-    จะเริ่มหลังตัวอักษร 2 ตัว
-  */
-
-  const start =
-    2 + idx;
-
-
-  const before =
-    tracking.slice(
-      0,
-      start
-    );
-
-  const match =
-    tracking.slice(
-      start,
-      start + query.length
-    );
-
-  const after =
-    tracking.slice(
-      start + query.length
+  // Numeric search
+  const digits =
+    digitsOnly(
+      query
     );
 
 
-  return (
-    escapeHtml(before) +
-    '<mark>' +
-    escapeHtml(match) +
-    '</mark>' +
-    escapeHtml(after)
+  if(!digits){
+
+    return safeTracking;
+
+  }
+
+
+  // Highlight digits inside tracking
+  const pattern =
+    new RegExp(
+      escapeRegex(
+        digits
+      ),
+      'g'
+    );
+
+
+  return safeTracking.replace(
+    pattern,
+    match =>
+      `<mark>${match}</mark>`
   );
 
 }
 
 
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
+// ======================================================
+// Escape regex
+// ======================================================
 
-function escapeHtml(s){
+function escapeRegex(
+  value
+){
 
-  return String(s)
-    .replace(
-      /&/g,
-      '&amp;'
-    )
-    .replace(
-      /</g,
-      '&lt;'
-    )
-    .replace(
-      />/g,
-      '&gt;'
-    );
+  return String(
+    value || ''
+  ).replace(
+    /[.*+?^${}()|[\]\\]/g,
+    '\\$&'
+  );
 
 }
 
 
-/* =========================================================
-   SEARCH EVENT
-========================================================= */
+// ======================================================
+// Escape HTML
+// ======================================================
 
-searchInput.addEventListener(
-  'input',
-  runSearch
-);
+function escapeHtml(
+  value
+){
 
+  return String(
+    value ?? ''
+  )
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+  .replace(
+    /</g,
+    '&lt;'
+  )
+  .replace(
+    />/g,
+    '&gt;'
+  )
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+  .replace(
+    /'/g,
+    '&#039;'
+  );
 
-/* =========================================================
-   START
-========================================================= */
+}
 
-restore();
-
-render();
 
 </script>
 
