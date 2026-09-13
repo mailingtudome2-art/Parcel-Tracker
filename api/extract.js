@@ -1,575 +1,440 @@
-// api/extract.js
-// Gemini OCR for ป.303 SCANNER
+// Vercel Serverless Function — Google Gemini OCR backend
+// POST /api/extract
+//
+// Request:
+// {
+//   images: ["<base64 jpeg>", "<base64 jpeg>", "<base64 jpeg>", "<base64 jpeg>"],
+//   mediaType: "image/jpeg"
+// }
+//
+// The browser sends FOUR cropped column images in ONE Gemini request.
+// Response:
+// { items: [{ seq: 1, tracking: "WB368998512TH" }, ...] }
 
-const MODEL = 'gemini-3.8-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
-const GEMINI_API_KEY =
-  process.env.GEMINI_API_KEY ||
-  process.env.GOOGLE_API_KEY;
+const EXTRACTION_PROMPT = `
+You are an OCR engine for Thai postal delivery manifests (บัญชีนำจ่าย ป.303).
 
-const MAX_OUTPUT_TOKENS = 2500;
-const TIMEOUT_MS = 30000;
+IMPORTANT:
+You are receiving FOUR images in ONE request.
+They are the four original vertical column groups from the SAME sheet.
 
+Image 1 = original column 1
+Expected sequence numbers in image 1:
+1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81
 
-// ============================================================
-// Normalize tracking number
-// ============================================================
+Image 2 = original column 2
+Expected sequence numbers in image 2:
+2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82
 
-function normalizeTracking(value) {
-  if (!value) return null;
+Image 3 = original column 3
+Expected sequence numbers in image 3:
+3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55, 59, 63, 67, 71, 75, 79
 
-  let s = String(value)
+Image 4 = original column 4
+Expected sequence numbers in image 4:
+4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80
+
+This sheet should contain 82 parcel entries total.
+
+YOUR MAIN TASK:
+Read every visible parcel tracking number from ALL FOUR images.
+Do not stop early.
+Do not skip rows.
+Completeness is more important than explanation.
+
+Tracking-number format:
+- exactly 2 English letters
+- followed by exactly 9 digits
+- followed by TH
+- examples: WB368998512TH, JG067450412TH
+- the printed form may contain spaces, for example:
+  WB 3689 9851 2 TH
+
+Output:
+- one line per parcel
+- preserve the printed sequence number
+- output exactly:
+  sequence|tracking_number
+
+Examples:
+1|WB368998512TH
+2|WB464939383TH
+3|WB462670430TH
+
+Rules:
+- Remove spaces and hyphens from tracking numbers.
+- Convert letters to uppercase.
+- Always include the final TH.
+- Ignore recipient names, addresses, phone numbers, dates, status text, prices, headers, and other non-tracking text.
+- If a tracking number is difficult to read, use the fixed 2-letters + 9-digits + TH format to make the best possible reading.
+- Do NOT invent a parcel that is not visible.
+- Do NOT merge two rows.
+- Do NOT return markdown.
+- Do NOT return a header.
+- Do NOT return explanations.
+- Do NOT return blank lines.
+- Return all visible rows, including highlighted rows.
+`;
+
+function cleanText(text){
+  return String(text || '')
+    .replace(/\r/g, '')
+    .replace(/```(?:text|plaintext)?/gi, '')
+    .replace(/```/g, '')
+    .trim();
+}
+
+function normalizeTracking(value){
+  if(!value) return null;
+
+  const s = String(value)
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '');
 
-  // รูปแบบ:
-  // XX + 9 digits + TH
-  const match = s.match(/^([A-Z]{2})(\d{9})TH$/);
+  let match = s.match(/^([A-Z]{2})(\d{9})TH$/);
 
-  if (!match) return null;
+  if(match){
+    return `${match[1]}${match[2]}TH`;
+  }
 
-  return `${match[1]}${match[2]}TH`;
+  // Accept output where Gemini omitted the final TH.
+  match = s.match(/^([A-Z]{2})(\d{9})$/);
+
+  if(match){
+    return `${match[1]}${match[2]}TH`;
+  }
+
+  return null;
 }
 
+function parseItems(text){
+  const cleaned = cleanText(text);
 
-// ============================================================
-// Extract tracking numbers from Gemini text
-// ============================================================
+  const items = [];
+  const seenSeq = new Set();
+  const seenTracking = new Set();
 
-function extractTrackingNumbers(text) {
-  if (!text) return [];
+  if(!cleaned){
+    return items;
+  }
 
-  const found = [];
+  for(const rawLine of cleaned.split('\n')){
+    const line = rawLine.trim();
 
-  // ----------------------------------------------------------
-  // Pattern 1:
-  // WB 4245 7161 1 TH
-  // ----------------------------------------------------------
+    if(!line){
+      continue;
+    }
 
-  const spacedRegex =
-    /\b([A-Z]{2})\s*(\d{4})\s*(\d{4})\s*(\d)\s*TH\b/gi;
+    const parts = line.split('|');
 
-  let match;
+    if(parts.length < 2){
+      continue;
+    }
 
-  while ((match = spacedRegex.exec(text)) !== null) {
+    const seqText = String(parts[0])
+      .replace(/[^0-9]/g, '');
 
-    const code = normalizeTracking(
-      `${match[1]}${match[2]}${match[3]}${match[4]}TH`
+    const seq = parseInt(seqText, 10);
+
+    if(!Number.isInteger(seq) || seq < 1 || seq > 999){
+      continue;
+    }
+
+    const tracking = normalizeTracking(
+      parts.slice(1).join('|')
     );
 
-    if (code) {
-      found.push(code);
-    }
-  }
-
-
-  // ----------------------------------------------------------
-  // Pattern 2:
-  // WB424571611TH
-  // ----------------------------------------------------------
-
-  const compactRegex =
-    /\b[A-Z]{2}\d{9}TH\b/gi;
-
-  while ((match = compactRegex.exec(text)) !== null) {
-
-    const code = normalizeTracking(match[0]);
-
-    if (code) {
-      found.push(code);
-    }
-  }
-
-
-  // ----------------------------------------------------------
-  // Pattern 3:
-  // WB-4245-7161-1-TH
-  // ----------------------------------------------------------
-
-  const looseRegex =
-    /\b([A-Z]{2})[^A-Z0-9]{0,5}(\d{4})[^A-Z0-9]{0,5}(\d{4})[^A-Z0-9]{0,5}(\d)[^A-Z0-9]{0,5}TH\b/gi;
-
-  while ((match = looseRegex.exec(text)) !== null) {
-
-    const code = normalizeTracking(
-      `${match[1]}${match[2]}${match[3]}${match[4]}TH`
-    );
-
-    if (code) {
-      found.push(code);
-    }
-  }
-
-
-  // ----------------------------------------------------------
-  // Remove duplicates
-  // ----------------------------------------------------------
-
-  const unique = [];
-  const seen = new Set();
-
-  for (const code of found) {
-
-    if (!seen.has(code)) {
-      seen.add(code);
-      unique.push(code);
+    if(!tracking){
+      continue;
     }
 
+    if(seenSeq.has(seq)){
+      continue;
+    }
+
+    if(seenTracking.has(tracking)){
+      continue;
+    }
+
+    seenSeq.add(seq);
+    seenTracking.add(tracking);
+
+    items.push({
+      seq,
+      tracking
+    });
   }
 
-  return unique;
+  items.sort((a, b) => a.seq - b.seq);
+
+  return items;
 }
 
+module.exports = async (req, res) => {
 
-// ============================================================
-// Convert to the exact format expected by index.html
-// ============================================================
-
-function makeItems(codes) {
-
-  return codes.map((tracking, index) => ({
-    seq: index + 1,
-    tracking: tracking
-  }));
-
-}
-
-
-// ============================================================
-// Gemini API handler
-// ============================================================
-
-export default async function handler(req, res) {
-
-  // ----------------------------------------------------------
-  // CORS
-  // ----------------------------------------------------------
-
-  res.setHeader(
-    'Access-Control-Allow-Origin',
-    '*'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'POST, OPTIONS'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type'
-  );
-
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-
-  if (req.method !== 'POST') {
-
-    return res.status(405).json({
+  if(req.method !== 'POST'){
+    res.status(405).json({
       error: 'Method not allowed'
     });
 
+    return;
   }
 
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY;
 
-  // ----------------------------------------------------------
-  // API KEY
-  // ----------------------------------------------------------
-
-  if (!GEMINI_API_KEY) {
-
-    return res.status(500).json({
+  if(!apiKey){
+    res.status(500).json({
       error:
-        'ไม่พบ GEMINI_API_KEY ใน Environment Variables ของ Vercel'
+        'ไม่พบ GEMINI_API_KEY หรือ GOOGLE_API_KEY ใน Vercel'
     });
 
+    return;
   }
 
+  let body = req.body;
 
-  try {
+  if(typeof body === 'string'){
+    try{
+      body = JSON.parse(body);
+    }catch(e){
+      body = {};
+    }
+  }
 
-    const body = req.body || {};
+  const mediaType =
+    body?.mediaType || 'image/jpeg';
 
-    const image = body.image;
+  let images =
+    Array.isArray(body?.images)
+      ? body.images
+      : [];
 
-    const mediaType =
-      body.mediaType || 'image/jpeg';
+  // Backward compatibility with old one-image frontend.
+  if(images.length === 0 && body?.image){
+    images = [body.image];
+  }
 
+  if(images.length === 0){
+    res.status(400).json({
+      error: 'ไม่พบรูปภาพสำหรับ OCR'
+    });
 
-    if (!image) {
+    return;
+  }
 
-      return res.status(400).json({
-        error: 'ไม่พบรูปภาพ'
+  // Maximum 4 columns.
+  if(images.length > 4){
+    images = images.slice(0, 4);
+  }
+
+  try{
+
+    const parts = [];
+
+    for(let i = 0; i < images.length; i++){
+
+      if(
+        !images[i] ||
+        typeof images[i] !== 'string'
+      ){
+        continue;
+      }
+
+      parts.push({
+        inline_data: {
+          mime_type: mediaType,
+          data: images[i]
+        }
       });
-
     }
 
+    if(parts.length === 0){
+      res.status(400).json({
+        error: 'รูปภาพไม่ถูกต้อง'
+      });
 
-    // --------------------------------------------------------
-    // Allowed image types
-    // --------------------------------------------------------
+      return;
+    }
 
-    const allowedTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/webp'
-    ];
-
-    const safeMediaType =
-      allowedTypes.includes(mediaType)
-        ? mediaType
-        : 'image/jpeg';
-
-
-    // ========================================================
-    // OCR PROMPT
-    // ========================================================
-
-    const prompt = `
-คุณคือ OCR สำหรับอ่านเลขพัสดุจากใบนำจ่ายไปรษณีย์ไทย ป.303
-
-ภาพนี้เป็น "ตาราง NON-COD"
-มีรายการพัสดุทั้งหมดประมาณ 82 รายการ
-
-ภาพที่ได้รับอาจถูก crop และจัดเป็นภาพ 2x2
-โดยมีข้อมูลจากตารางเดิมทั้งหมด 4 คอลัมน์
-
-สำคัญมาก:
-
-ต้องอ่านทั้ง 4 ช่องของภาพ
-ห้ามอ่านเฉพาะช่องใดช่องหนึ่ง
-
-ให้ตรวจทุกแถวตั้งแต่ด้านบนจนถึงด้านล่าง
-และพยายามอ่านเลขพัสดุทุกเลขที่มองเห็น
-
-เลขพัสดุมีรูปแบบ:
-
-XX 1234 5678 9 TH
-
-หรือ
-
-XX123456789TH
-
-ตัวอย่าง:
-
-WB 4876 8017 7 TH
-WB 5016 6616 3 TH
-WB 4245 7161 1 TH
-JD 0852 7423 2 TH
-
-รูปแบบที่ถูกต้องคือ:
-
-ตัวอักษรอังกฤษ 2 ตัว
-+
-ตัวเลข 9 ตัว
-+
-TH
-
-เช่น:
-
-WB424571611TH
-
-กฎสำคัญ:
-
-1. อ่านเฉพาะเลขพัสดุ
-2. ไม่ต้องอ่านชื่อ
-3. ไม่ต้องอ่านที่อยู่
-4. ไม่ต้องอ่านสถานะ
-5. ไม่ต้องอ่านจำนวนเงิน
-6. ไม่ต้องอ่านหัวเอกสาร
-7. ไม่ต้องอ่าน barcode ด้านบน
-8. ไม่ต้องอ่านข้อความที่เขียนด้วยลายมือด้านล่าง
-9. ห้ามสร้างเลขพัสดุขึ้นมาเอง
-10. ถ้าเลขใดอ่านไม่ชัดจริง ๆ ให้ข้ามเลขนั้น
-11. ต้องตรวจทั้ง 4 คอลัมน์
-12. อย่าหยุดหลังจากอ่านได้บางส่วน
-13. พยายามอ่านให้ครบทุกแถว
-
-สำคัญมาก:
-เลขที่อยู่ในภาพมีการเน้นสีเหลืองบางส่วน
-สีเหลืองเป็นเพียงการทำเครื่องหมายในเอกสาร
-ไม่ใช่ส่วนหนึ่งของเลขพัสดุ
-
-OUTPUT:
-
-ให้ตอบ "เฉพาะเลขพัสดุ" เท่านั้น
-หนึ่งเลขต่อหนึ่งบรรทัด
-
-ตัวอย่าง:
-
-WB487680177TH
-WB501666163TH
-WB424571611TH
-JD085274232TH
-
-ห้ามใส่:
-- เลขลำดับ
-- เครื่องหมาย |
-- bullet
-- markdown
-- คำอธิบาย
-- JSON
-
-ตรวจสอบก่อนตอบ:
-- ทุกเลขต้องมี 2 ตัวอักษร
-- ตามด้วยตัวเลข 9 ตัว
-- ลงท้าย TH
-- อย่าตัดเลขกลางทาง
-- อย่าเพิ่มเลขที่ไม่มีในภาพ
-
-อ่านทั้ง 4 คอลัมน์ให้ครบที่สุด
-`;
-
-
-    // ========================================================
-    // Gemini endpoint
-    // ========================================================
+    parts.push({
+      text: EXTRACTION_PROMPT
+    });
 
     const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/` +
-      `${MODEL}:generateContent`;
-
+      'https://generativelanguage.googleapis.com/v1beta/models/' +
+      MODEL +
+      ':generateContent';
 
     const controller =
       new AbortController();
 
     const timeout =
-      setTimeout(() => {
-        controller.abort();
-      }, TIMEOUT_MS);
-
+      setTimeout(
+        () => controller.abort(),
+        30000
+      );
 
     let response;
 
-    try {
+    try{
 
       response = await fetch(url, {
-
         method: 'POST',
 
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY
+          'x-goog-api-key': apiKey
         },
 
         body: JSON.stringify({
 
           contents: [
             {
-              role: 'user',
-
-              parts: [
-
-                {
-                  inlineData: {
-                    mimeType: safeMediaType,
-                    data: image
-                  }
-                },
-
-                {
-                  text: prompt
-                }
-
-              ]
+              parts
             }
           ],
 
           generationConfig: {
+            temperature: 0,
 
-            maxOutputTokens:
-              MAX_OUTPUT_TOKENS,
+            maxOutputTokens: 3000,
 
             thinkingConfig: {
               thinkingLevel: 'low'
             }
-
           }
 
         }),
 
         signal: controller.signal
-
       });
 
-    } finally {
+    }finally{
 
       clearTimeout(timeout);
 
     }
 
+    const responseText =
+      await response.text();
 
-    // ========================================================
-    // Read Gemini response
-    // ========================================================
-
-    let data = null;
-
-    try {
-
-      data = await response.json();
-
-    } catch {
-
-      data = null;
-
-    }
-
-
-    // ========================================================
-    // Gemini error
-    // ========================================================
-
-    if (!response.ok) {
+    if(!response.ok){
 
       console.error(
-        'Gemini API error:',
-        data
+        'Gemini error:',
+        response.status,
+        responseText
       );
 
-
-      const message =
-        data?.error?.message ||
-        data?.error?.status ||
-        `HTTP ${response.status}`;
-
-
-      if (
-        response.status === 429 ||
-        String(message)
-          .toLowerCase()
-          .includes('quota') ||
-        String(message)
-          .toLowerCase()
-          .includes('rate')
-      ) {
-
-        return res.status(429).json({
-
-          error:
-            'Gemini ถึงขีดจำกัดการใช้งาน กรุณารอสักครู่แล้วลองใหม่',
-
-          detail: message
-
-        });
-
-      }
-
-
-      return res.status(
-        response.status
-      ).json({
-
-        error: 'Gemini API error',
-
-        detail: message
-
+      res.status(response.status).json({
+        error:
+          'Gemini API error (' +
+          response.status +
+          '): ' +
+          responseText.slice(0, 500)
       });
 
+      return;
     }
 
+    let data;
 
-    // ========================================================
-    // Get Gemini text
-    // ========================================================
+    try{
 
-    const parts =
-      data?.candidates?.[0]?.content?.parts || [];
+      data = JSON.parse(responseText);
 
+    }catch(e){
+
+      console.error(
+        'Invalid Gemini JSON:',
+        responseText
+      );
+
+      res.status(502).json({
+        error:
+          'Gemini ตอบกลับข้อมูลไม่ถูกต้อง'
+      });
+
+      return;
+    }
+
+    const candidate =
+      data?.candidates?.[0];
+
+    const outputParts =
+      candidate?.content?.parts || [];
 
     const text =
-      parts
-        .filter(
-          part =>
-            typeof part?.text === 'string'
-        )
-        .map(
-          part => part.text
-        )
-        .join('\n');
-
+      outputParts
+        .map(part => part?.text || '')
+        .join('\n')
+        .trim();
 
     console.log(
-      'Gemini OCR text:',
-      text
+      'Gemini model:',
+      MODEL
     );
 
-
-    if (!text) {
-
-      return res.status(200).json({
-        items: []
-      });
-
-    }
-
-
-    // ========================================================
-    // Extract tracking numbers
-    // ========================================================
-
-    const codes =
-      extractTrackingNumbers(text);
-
+    console.log(
+      'OCR output length:',
+      text.length
+    );
 
     const items =
-      makeItems(codes);
-
+      parseItems(text);
 
     console.log(
-      `Gemini OCR found ${items.length} tracking numbers`
+      'OCR parsed items:',
+      items.length
     );
 
+    if(items.length === 0){
 
-    // ========================================================
-    // IMPORTANT:
-    // index.html expects:
-    //
-    // {
-    //   seq: 1,
-    //   tracking: "WB424571611TH"
-    // }
-    // ========================================================
+      console.error(
+        'Gemini OCR raw output:',
+        text.slice(0, 5000)
+      );
 
-    return res.status(200).json({
+      res.status(200).json({
+        items: [],
+        warning:
+          'Gemini ไม่พบเลขพัสดุที่อ่านได้'
+      });
+
+      return;
+    }
+
+    res.status(200).json({
       items
     });
 
-
-  } catch (error) {
+  }catch(error){
 
     console.error(
-      'OCR error:',
+      'extract.js error:',
       error
     );
 
+    if(error?.name === 'AbortError'){
 
-    if (
-      error?.name === 'AbortError'
-    ) {
-
-      return res.status(504).json({
-
+      res.status(504).json({
         error:
-          'Gemini OCR ใช้เวลานานเกิน 30 วินาที กรุณาลองใหม่'
-
+          'OCR ใช้เวลานานเกิน 30 วินาที กรุณาลองใหม่'
       });
 
+      return;
     }
 
-
-    return res.status(500).json({
-
+    res.status(500).json({
       error:
         error?.message ||
-        'เกิดข้อผิดพลาดในการประมวลผล OCR'
-
+        'OCR processing failed'
     });
 
   }
 
-}
+};
