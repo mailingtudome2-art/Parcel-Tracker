@@ -3,1655 +3,533 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>ป.303 SCANNER</title>
-
+<title>ป.303 SCANNER — ค้นหาเลขพัสดุ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-* {
-  box-sizing: border-box;
-}
+  :root{
+    --bg:#ffffff;
+    --panel:#ffffff;
+    --panel-2:#eef7ea;
+    --ink:#12291a;
+    --muted:#4c6152;
+    --orange:#1d7a3c;
+    --amber:#8a6d00;
+    --highlight:#ffdd33;
+    --line:#bfdcc2;
+    --danger:#c62828;
+    --good:#1d7a3c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 90% -10%, #eef7ea 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  ::selection{ background:var(--highlight); color:var(--ink); }
+  :focus-visible{ outline:2px solid var(--orange); outline-offset:2px; }
 
-body {
-  margin: 0;
-  font-family: Arial, "Noto Sans Thai", sans-serif;
-  background: #f4fbf6;
-  color: #173b2a;
-}
+  .wrap{ max-width:880px; margin:0 auto; padding:28px 20px 80px; }
 
-.wrap {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-}
+  /* ---------- header ---------- */
+  header{ padding-bottom:18px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 8px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:clamp(28px,5vw,40px);
+    margin:0; letter-spacing:-0.01em; line-height:1.05;
+  }
+  h1 .doc{ color:var(--orange); }
+  .sub{ color:var(--muted); margin:10px 0 0; font-size:14.5px; max-width:52ch; }
 
-.card {
-  background: #fff;
-  border: 1px solid #d7eadc;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 18px rgba(0,0,0,.05);
-  margin-bottom: 16px;
-}
+  .barcode{
+    height:14px; margin-top:20px;
+    background-image: repeating-linear-gradient(90deg,
+      var(--line) 0 2px, transparent 2px 5px,
+      var(--line) 5px 8px, transparent 8px 11px,
+      var(--line) 11px 12px, transparent 12px 18px);
+    opacity:.9;
+  }
 
-h1 {
-  margin: 0 0 6px;
-  font-size: 28px;
-  color: #138a4b;
-}
+  section{ margin-top:34px; }
+  .label-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px;}
+  .section-title{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;
+    letter-spacing:.02em; color:var(--ink); margin:0;
+  }
+  .count-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted);
+  }
 
-.sub {
-  color: #557363;
-  margin-bottom: 16px;
-}
+  /* ---------- upload ---------- */
+  .dropzone{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:26px 20px;
+    text-align:center;
+    background:var(--panel);
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--orange);
+    background:#e2f3e5;
+  }
+  #fileInput{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  .dropzone{ user-select:none; }
+  .dz-title{ font-weight:600; font-size:15px; }
+  .dz-sub{ color:var(--muted); font-size:13px; margin-top:4px; }
+  .dz-icon{
+    width:34px;height:34px;margin:0 auto 10px;
+    border:1.5px solid var(--muted); border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted); font-size:18px;
+  }
 
-.row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
+  /* ---------- sheet cards ---------- */
+  .sheets{ display:flex; flex-direction:column; gap:10px; }
+  .sheet-card{
+    display:flex; align-items:center; gap:12px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px;
+  }
+  .thumb{
+    width:46px;height:46px; border-radius:6px; object-fit:cover;
+    background:var(--panel-2); flex:none; border:1px solid var(--line);
+  }
+  .thumb.placeholder{ display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; font-family:'IBM Plex Mono',monospace;}
+  .sheet-meta{ flex:1; min-width:0; }
+  .sheet-name{ font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sheet-status{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; margin-top:2px; }
+  .sheet-status.scanning{ color:var(--amber); }
+  .sheet-status.done{ color:var(--good); }
+  .sheet-status.error{ color:var(--danger); }
+  .spinner{
+    width:11px;height:11px;border-radius:50%;
+    border:2px solid rgba(138,109,0,.25); border-top-color:var(--amber);
+    display:inline-block; margin-right:6px; vertical-align:-1px;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .sheet-actions{ display:flex; gap:6px; flex:none; }
+  .icon-btn{
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+    border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{ border-color:var(--orange); color:var(--orange); }
 
-button {
-  border: 0;
-  border-radius: 10px;
-  padding: 11px 16px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
+  /* ---------- search ---------- */
+  .search-box{ position:relative; }
+  .search-box input{
+    width:100%; background:var(--panel-2); border:1.5px solid var(--line);
+    color:var(--ink); border-radius:10px; padding:16px 16px 16px 46px;
+    font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.03em;
+  }
+  .search-box input::placeholder{ color:var(--muted); font-family:'Inter',sans-serif; letter-spacing:normal;}
+  .search-box .glyph{
+    position:absolute; left:16px; top:50%; transform:translateY(-50%);
+    color:var(--muted); font-size:16px; pointer-events:none;
+  }
 
-#readBtn {
-  background: #138a4b;
-  color: white;
-}
+  .empty-hint{ color:var(--muted); font-size:13px; margin-top:10px; }
 
-#clearBtn {
-  background: #e8f4ec;
-  color: #17663a;
-}
+  .results{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .result-row{
+    display:flex; align-items:center; gap:14px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px;
+  }
+  .seq-badge{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
+    color:var(--bg); background:var(--ink);
+    border-radius:7px; min-width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .result-main{ flex:1; min-width:0; }
+  .tracking-no{
+    font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; letter-spacing:.04em;
+    word-break:break-all; color:var(--ink);
+  }
+  .tracking-no mark{
+    background:var(--highlight); color:var(--ink); font-weight:700;
+    padding:1px 3px; border-radius:2px;
+    box-decoration-break:clone; -webkit-box-decoration-break:clone;
+    transform:skew(-2deg);
+    display:inline-block;
+  }
+  .result-src{ color:var(--muted); font-size:11.5px; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
+  .no-results{
+    color:var(--muted); font-size:14px; padding:18px 4px;
+  }
 
-button:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-}
+  footer{
+    margin-top:46px; padding-top:16px; border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+  }
 
-input[type="file"] {
-  width: 100%;
-}
-
-.search {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #c9dfcf;
-  border-radius: 10px;
-  font-size: 16px;
-  outline: none;
-}
-
-.progress {
-  height: 12px;
-  background: #e6f0e9;
-  border-radius: 99px;
-  overflow: hidden;
-  margin: 12px 0;
-}
-
-.bar {
-  height: 100%;
-  width: 0;
-  background: #1aa15a;
-  transition: width .25s;
-}
-
-.status {
-  font-size: 14px;
-  color: #4b6556;
-  min-height: 22px;
-}
-
-.stats {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  font-size: 15px;
-  margin-top: 8px;
-}
-
-.stats b {
-  color: #138a4b;
-}
-
-#preview {
-  max-width: 100%;
-  max-height: 500px;
-  display: none;
-  margin-top: 12px;
-  border-radius: 10px;
-  border: 1px solid #d7eadc;
-}
-
-.results {
-  margin-top: 14px;
-}
-
-.item {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid #edf3ee;
-  font-size: 14px;
-}
-
-.seq {
-  width: 52px;
-  color: #557363;
-}
-
-.trk {
-  font-weight: 700;
-  letter-spacing: .4px;
-}
-
-.ok,
-.warn,
-.err {
-  border-radius: 10px;
-  padding: 10px;
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.ok {
-  background: #eaf8ef;
-  border: 1px solid #bfe3ca;
-  color: #17663a;
-}
-
-.warn {
-  background: #fff7df;
-  border: 1px solid #f0d78a;
-  color: #775b13;
-}
-
-.err {
-  background: #fff0f0;
-  border: 1px solid #efc1c1;
-  color: #9a2525;
-}
-
-.log {
-  font-size: 12px;
-  color: #71877a;
-  white-space: pre-wrap;
-  margin-top: 10px;
-}
+  @media (max-width:520px){
+    .sheet-card{ flex-wrap:wrap; }
+  }
 </style>
 </head>
-
 <body>
-
 <div class="wrap">
 
-  <div class="card">
+  <header>
+    <p class="eyebrow">บัญชีนำจ่าย · ป.303</p>
+    <h1>ป<span class="doc">.303</span> SCANNER</h1>
+    <p class="sub">อัปโหลดรูปใบนำจ่าย แล้วพิมพ์เลขพัสดุบางส่วนเพื่อหาลำดับที่ในใบ — ไม่ต้องไล่ตาทีละบรรทัด</p>
+    <div class="barcode"></div>
+  </header>
 
-    <h1>ป.303 SCANNER</h1>
-
-    <div class="sub">
-      อ่านเลขพัสดุจากบัญชีนำจ่ายด้วย Gemini
+  <section>
+    <div class="label-row">
+      <p class="section-title">01 — อัปโหลดใบนำจ่าย</p>
+      <span class="count-tag" id="sheetCount">0 ใบ</span>
     </div>
-
-    <input
-      id="fileInput"
-      type="file"
-      accept="image/*"
-    >
-
-    <img
-      id="preview"
-      alt="ตัวอย่างรูป"
-    >
-
-    <div class="row" style="margin-top:14px">
-
-      <button id="readBtn" disabled>
-        อ่านเลขพัสดุ
-      </button>
-
-      <button id="clearBtn">
-        ล้าง
-      </button>
-
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="อัปโหลดรูปใบนำจ่าย">
+      <div class="dz-icon">＋</div>
+      <div class="dz-title">ลากรูปมาวาง หรือแตะเพื่อเลือกไฟล์</div>
+      <div class="dz-sub">อัปโหลดได้หลายรูป · JPG / PNG / HEIC</div>
     </div>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </section>
 
-    <div class="progress">
-      <div id="bar" class="bar"></div>
+  <section id="sheetsSection" style="display:none;">
+    <div class="sheets" id="sheetsList"></div>
+  </section>
+
+  <section>
+    <div class="label-row">
+      <p class="section-title">02 — ค้นหาเลขพัสดุ</p>
+      <span class="count-tag" id="itemCount">0 รายการ</span>
     </div>
-
-    <div id="status" class="status">
-      กรุณาเลือกรูป
+    <div class="search-box">
+      <span class="glyph">#</span>
+      <input type="text" id="searchInput" placeholder="พิมพ์ตัวเลขบางส่วน เช่น 5193 หรือ 0161" inputmode="numeric" autocomplete="off">
     </div>
+    <div id="emptyHint" class="empty-hint">ยังไม่มีข้อมูล — อัปโหลดใบนำจ่ายด้านบนก่อน</div>
+    <div class="results" id="results"></div>
+  </section>
 
-    <div class="stats">
-
-      <div>
-        จำนวนที่อ่านได้:
-        <b id="count">0</b>
-      </div>
-
-      <div>
-        จำนวนทั้งหมดในใบ:
-        <b id="sheetTotal">-</b>
-      </div>
-
-      <div>
-        ความคืบหน้า:
-        <b id="pct">0%</b>
-      </div>
-
-    </div>
-
-    <div id="message"></div>
-
-  </div>
-
-
-  <div class="card">
-
-    <input
-      id="searchInput"
-      class="search"
-      placeholder="พิมพ์เลขเพื่อค้นหา เช่น 4914"
-    >
-
-    <div id="results" class="results"></div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div id="log" class="log"></div>
-
-  </div>
-
+  <footer>
+    <span id="footerLeft">ยังไม่มีใบนำจ่าย</span>
+    <span>ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น</span>
+  </footer>
 </div>
 
-
 <script>
+const STORAGE_KEY = 'parcel-tracker-sheets-v1';
+let sheets = []; // {id, filename, status, error, items: [{seq, tracking}]}
 
-const fileInput =
-  document.getElementById("fileInput");
+const sheetsList = document.getElementById('sheetsList');
+const sheetsSection = document.getElementById('sheetsSection');
+const sheetCount = document.getElementById('sheetCount');
+const itemCount = document.getElementById('itemCount');
+const resultsEl = document.getElementById('results');
+const emptyHint = document.getElementById('emptyHint');
+const searchInput = document.getElementById('searchInput');
+const footerLeft = document.getElementById('footerLeft');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
 
-const preview =
-  document.getElementById("preview");
-
-const readBtn =
-  document.getElementById("readBtn");
-
-const clearBtn =
-  document.getElementById("clearBtn");
-
-const bar =
-  document.getElementById("bar");
-
-const statusEl =
-  document.getElementById("status");
-
-const countEl =
-  document.getElementById("count");
-
-const totalEl =
-  document.getElementById("sheetTotal");
-
-const pctEl =
-  document.getElementById("pct");
-
-const resultsEl =
-  document.getElementById("results");
-
-const searchInput =
-  document.getElementById("searchInput");
-
-const messageEl =
-  document.getElementById("message");
-
-const logEl =
-  document.getElementById("log");
-
-
-let originalDataUrl = "";
-
-let originalMediaType = "image/jpeg";
-
-let all = [];
-
-let busy = false;
-
-
-/* =========================
-   UI
-========================= */
-
-function setProgress(percent, text = "") {
-
-  const n =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(percent)
-      )
-    );
-
-  bar.style.width = n + "%";
-
-  pctEl.textContent =
-    n + "%";
-
-  if (text) {
-    statusEl.textContent = text;
-  }
-}
-
-
-function setMessage(type, text) {
-
-  messageEl.className =
-    type || "";
-
-  messageEl.textContent =
-    text || "";
-}
-
-
-/* =========================
-   Tracking
-========================= */
-
-function digitsOnly(value) {
-
-  return String(value || "")
-    .replace(/[^0-9]/g, "");
-}
-
-
-function normalizeTracking(value) {
-
-  let s =
-    String(value || "")
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "");
-
-  /*
-   * บางครั้ง Gemini อาจตัด TH ออก
-   */
-  if (/^[A-Z]{2}[0-9]{9}$/.test(s)) {
-    s += "TH";
-  }
-
-  if (
-    !/^[A-Z]{2}[0-9]{9}TH$/.test(s)
-  ) {
-    return "";
-  }
-
-  return s;
-}
-
-
-/* =========================
-   Items
-========================= */
-
-function normalizeItems(items) {
-
-  const map = new Map();
-
-  if (!Array.isArray(items)) {
-    return [];
-  }
-
-  for (const item of items) {
-
-    const seq =
-      Number(
-        item?.seq ??
-        item?.sequence
-      );
-
-    const tracking =
-      normalizeTracking(
-        item?.tracking ??
-        item?.tracking_number
-      );
-
-    if (
-      !Number.isInteger(seq) ||
-      seq < 1 ||
-      seq > 100
-    ) {
-      continue;
-    }
-
-    if (!tracking) {
-      continue;
-    }
-
-    map.set(
-      seq,
-      {
-        seq,
-        tracking
+function allItems(){
+  const out = [];
+  for(const s of sheets){
+    if(s.status === 'done'){
+      for(const it of s.items){
+        out.push({ seq: it.seq, tracking: it.tracking, sheetName: s.filename });
       }
-    );
+    }
   }
-
-  return [...map.values()]
-    .sort((a, b) => a.seq - b.seq);
+  return out;
 }
 
+function digitsOnly(str){ return (str||'').replace(/[^0-9]/g,''); }
 
-function mergeItems(items) {
+function render(){
+  sheetsSection.style.display = sheets.length ? 'block' : 'none';
+  sheetCount.textContent = sheets.length + ' ใบ';
+  sheetsList.innerHTML = '';
+  for(const s of sheets){
+    const card = document.createElement('div');
+    card.className = 'sheet-card';
 
-  const map =
-    new Map(
-      all.map(item => [
-        item.seq,
-        item
-      ])
-    );
+    const thumb = document.createElement(s.thumbUrl ? 'img' : 'div');
+    thumb.className = 'thumb' + (s.thumbUrl ? '' : ' placeholder');
+    if(s.thumbUrl){ thumb.src = s.thumbUrl; } else { thumb.textContent = 'IMG'; }
+    card.appendChild(thumb);
 
-  for (
-    const item
-    of normalizeItems(items)
-  ) {
+    const meta = document.createElement('div');
+    meta.className = 'sheet-meta';
+    const name = document.createElement('div');
+    name.className = 'sheet-name';
+    name.textContent = s.filename;
+    const status = document.createElement('div');
+    if(s.status === 'scanning'){
+      status.className = 'sheet-status scanning';
+      status.innerHTML = '<span class="spinner"></span>กำลังอ่านเลขพัสดุ…';
+    } else if(s.status === 'done'){
+      status.className = 'sheet-status done';
+      status.textContent = 'สำเร็จ — พบ ' + s.items.length + ' รายการ';
+    } else if(s.status === 'error'){
+      status.className = 'sheet-status error';
+      status.textContent = 'อ่านไม่สำเร็จ: ' + (s.error || 'ลองใหม่อีกครั้ง');
+    }
+    meta.appendChild(name);
+    meta.appendChild(status);
+    card.appendChild(meta);
 
-    map.set(
-      item.seq,
-      item
-    );
+    const actions = document.createElement('div');
+    actions.className = 'sheet-actions';
+    if(s.status === 'error'){
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'icon-btn';
+      retryBtn.title = 'ลองใหม่';
+      retryBtn.textContent = '↻';
+      retryBtn.onclick = () => retrySheet(s.id);
+      actions.appendChild(retryBtn);
+    }
+    const delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn';
+    delBtn.title = 'ลบ';
+    delBtn.textContent = '×';
+    delBtn.onclick = () => removeSheet(s.id);
+    actions.appendChild(delBtn);
+    card.appendChild(actions);
+
+    sheetsList.appendChild(card);
   }
 
-  all =
-    [...map.values()]
-      .sort(
-        (a, b) =>
-          a.seq - b.seq
-      );
+  const items = allItems();
+  itemCount.textContent = items.length + ' รายการ';
+  footerLeft.textContent = sheets.length
+    ? ('ใบนำจ่าย ' + sheets.length + ' ใบ · รวม ' + items.length + ' พัสดุ')
+    : 'ยังไม่มีใบนำจ่าย';
+  emptyHint.style.display = items.length ? 'none' : 'block';
 
+  runSearch();
+  persist();
+}
+
+function persist(){
+  try{
+    const toSave = sheets.map(s => ({
+      id: s.id, filename: s.filename, status: s.status === 'scanning' ? 'error' : s.status,
+      error: s.status === 'scanning' ? 'ยกเลิกก่อนเสร็จ' : s.error,
+      items: s.items || []
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  }catch(e){}
+}
+
+function restore(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      sheets = parsed.map(s => ({...s, thumbUrl:null}));
+    }
+  }catch(e){ /* no saved data yet */ }
+}
+
+function removeSheet(id){
+  sheets = sheets.filter(s => s.id !== id);
   render();
 }
 
+function isLikelyImage(file){
+  if(file.type) return file.type.startsWith('image/');
+  return /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(file.name || '');
+}
 
-/* =========================
-   Render
-========================= */
+function normalizeImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('เปิดไฟล์รูปภาพนี้ไม่ได้'));
+      img.onload = () => {
+        try{
+          const maxDim = 2000;
+          let { width, height } = img;
+          if(width > maxDim || height > maxDim){
+            const scale = maxDim / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg', dataUrl });
+        }catch(e){ reject(new Error('แปลงไฟล์รูปภาพไม่สำเร็จ')); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-function render() {
+async function extractSheet(base64, mediaType){
+  const response = await fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64, mediaType })
+  });
 
-  countEl.textContent =
-    all.length;
+  let data;
+  try{ data = await response.json(); }
+  catch(e){ throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'); }
 
-  const q =
-    searchInput.value
-      .trim()
-      .toUpperCase();
-
-  let list = all;
-
-  if (q) {
-
-    const digits =
-      digitsOnly(q);
-
-    list =
-      all.filter(item => {
-
-        if (
-          item.tracking.includes(q)
-        ) {
-          return true;
-        }
-
-        if (
-          digits &&
-          digitsOnly(
-            item.tracking
-          ).includes(digits)
-        ) {
-          return true;
-        }
-
-        return false;
-      });
+  if(!response.ok || data.error){
+    throw new Error(data.error || 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ');
   }
+  if(!data.items || data.items.length === 0){
+    throw new Error('อ่านรูปแบบเลขพัสดุไม่สำเร็จ');
+  }
+  return data.items;
+}
 
-  if (!list.length) {
+async function processFile(file){
+  const id = 's' + Date.now() + Math.random().toString(36).slice(2,7);
+  const sheet = { id, filename: file.name || 'รูปที่อัปโหลด', status: 'scanning', items: [], thumbUrl: null, _file: file };
+  sheets.push(sheet);
+  render();
 
-    resultsEl.innerHTML =
-      '<div style="padding:12px;color:#71877a">ไม่พบข้อมูล</div>';
+  try{
+    const { base64, mediaType, dataUrl } = await normalizeImage(file);
+    const target1 = sheets.find(s => s.id === id);
+    if(target1){ target1.thumbUrl = dataUrl; render(); }
+    const items = await extractSheet(base64, mediaType);
+    const target = sheets.find(s => s.id === id);
+    if(target){ target.status = 'done'; target.items = items; }
+  }catch(err){
+    const target = sheets.find(s => s.id === id);
+    if(target){ target.status = 'error'; target.error = err.message || 'เกิดข้อผิดพลาด'; }
+  }
+  render();
+}
 
+function retrySheet(id){
+  const s = sheets.find(x => x.id === id);
+  if(!s || !s._file) return;
+  s.status = 'scanning'; s.error = null;
+  render();
+  (async () => {
+    try{
+      const { base64, mediaType, dataUrl } = await normalizeImage(s._file);
+      s.thumbUrl = dataUrl;
+      const items = await extractSheet(base64, mediaType);
+      s.status = 'done'; s.items = items;
+    }catch(err){
+      s.status = 'error'; s.error = err.message || 'เกิดข้อผิดพลาด';
+    }
+    render();
+  })();
+}
+
+function handleFiles(fileList){
+  const files = Array.from(fileList).filter(isLikelyImage);
+  files.forEach(processFile);
+}
+
+fileInput.addEventListener('change', (e) => { handleFiles(e.target.files); fileInput.value = ''; });
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
+});
+
+['dragenter','dragover'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); });
+});
+dropzone.addEventListener('drop', (e) => {
+  if(e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+});
+
+function runSearch(){
+  const q = digitsOnly(searchInput.value.trim());
+  resultsEl.innerHTML = '';
+  if(!q){ return; }
+
+  const items = allItems();
+  const matches = items.filter(it => digitsOnly(it.tracking).includes(q) || it.tracking.includes(q.toUpperCase()));
+
+  if(matches.length === 0){
+    const div = document.createElement('div');
+    div.className = 'no-results';
+    div.textContent = 'ไม่พบเลขพัสดุที่ตรงกับ "' + searchInput.value.trim() + '"';
+    resultsEl.appendChild(div);
     return;
   }
 
-  resultsEl.innerHTML =
-    list.map(item => {
-
-      return `
-        <div class="item">
-          <span class="seq">
-            #${item.seq}
-          </span>
-
-          <span class="trk">
-            ${item.tracking}
-          </span>
-        </div>
-      `;
-
-    }).join("");
-}
-
-
-searchInput.addEventListener(
-  "input",
-  render
-);
-
-
-/* =========================
-   File
-========================= */
-
-fileInput.addEventListener(
-  "change",
-  async () => {
-
-    const file =
-      fileInput.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    originalMediaType =
-      file.type ||
-      "image/jpeg";
-
-    originalDataUrl =
-      await readFileAsDataURL(file);
-
-    preview.src =
-      originalDataUrl;
-
-    preview.style.display =
-      "block";
-
-    readBtn.disabled =
-      false;
-
-    all = [];
-
-    render();
-
-    totalEl.textContent =
-      "-";
-
-    setProgress(
-      0,
-      "พร้อมอ่าน"
-    );
-
-    setMessage(
-      "",
-      ""
-    );
-
-    logEl.textContent =
-      "";
-  }
-);
-
-
-function readFileAsDataURL(file) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const reader =
-        new FileReader();
-
-      reader.onload =
-        () => resolve(
-          reader.result
-        );
-
-      reader.onerror =
-        reject;
-
-      reader.readAsDataURL(file);
-    }
-  );
-}
-
-
-/* =========================
-   Data URL
-========================= */
-
-function dataUrlParts(dataUrl) {
-
-  const match =
-    String(dataUrl).match(
-      /^data:([^;]+);base64,(.*)$/s
-    );
-
-  if (!match) {
-    throw new Error(
-      "รูปภาพไม่ถูกต้อง"
-    );
-  }
-
-  return {
-    mediaType:
-      match[1] ||
-      "image/jpeg",
-
-    image:
-      match[2]
-  };
-}
-
-
-/* =========================
-   Crop
-========================= */
-
-function cropImage(
-  dataUrl,
-  x,
-  y,
-  w,
-  h,
-  scale = 2.0,
-  quality = 0.68
-) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const img =
-        new Image();
-
-      img.onload = () => {
-
-        const sx =
-          Math.max(
-            0,
-            Math.round(
-              x * img.naturalWidth
-            )
-          );
-
-        const sy =
-          Math.max(
-            0,
-            Math.round(
-              y * img.naturalHeight
-            )
-          );
-
-        const sw =
-          Math.min(
-            img.naturalWidth - sx,
-            Math.round(
-              w * img.naturalWidth
-            )
-          );
-
-        const sh =
-          Math.min(
-            img.naturalHeight - sy,
-            Math.round(
-              h * img.naturalHeight
-            )
-          );
-
-        const canvas =
-          document.createElement(
-            "canvas"
-          );
-
-        canvas.width =
-          Math.max(
-            1,
-            Math.round(
-              sw * scale
-            )
-          );
-
-        canvas.height =
-          Math.max(
-            1,
-            Math.round(
-              sh * scale
-            )
-          );
-
-        const ctx =
-          canvas.getContext(
-            "2d"
-          );
-
-        ctx.imageSmoothingEnabled =
-          true;
-
-        ctx.drawImage(
-          img,
-          sx,
-          sy,
-          sw,
-          sh,
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-
-        const output =
-          canvas.toDataURL(
-            "image/jpeg",
-            quality
-          );
-
-        resolve(
-          dataUrlParts(output)
-        );
-      };
-
-      img.onerror =
-        () => reject(
-          new Error(
-            "โหลดรูปไม่สำเร็จ"
-          )
-        );
-
-      img.src =
-        dataUrl;
-    }
-  );
-}
-
-
-/* =========================
-   Make 4 columns
-========================= */
-
-async function makeColumns() {
-
-  const img =
-    new Image();
-
-  img.src =
-    originalDataUrl;
-
-  await new Promise(
-    (resolve, reject) => {
-
-      img.onload =
-        resolve;
-
-      img.onerror =
-        () => reject(
-          new Error(
-            "โหลดรูปไม่สำเร็จ"
-          )
-        );
-    }
-  );
-
-  const srcW =
-    img.naturalWidth;
-
-  const srcH =
-    img.naturalHeight;
-
-
-  /*
-   * ตำแหน่งเดิมของระบบ
-   */
-  const cropX =
-    Math.round(
-      srcW * 0.065
-    );
-
-  const cropY =
-    Math.round(
-      srcH * 0.285
-    );
-
-  const cropW =
-    Math.round(
-      srcW * 0.855
-    );
-
-  const cropH =
-    Math.round(
-      srcH * 0.635
-    );
-
-
-  const safeW =
-    cropW;
-
-  const gap =
-    Math.max(
-      2,
-      Math.round(
-        safeW * 0.009
-      )
-    );
-
-  const colW =
-    Math.floor(
-      (
-        safeW -
-        gap * 3
-      ) / 4
-    );
-
-
-  const columns = [];
-
-
-  for (
-    let i = 0;
-    i < 4;
-    i++
-  ) {
-
-    const x =
-      cropX +
-      i * (colW + gap);
-
-    const column =
-      await cropImage(
-        originalDataUrl,
-
-        x / srcW,
-        cropY / srcH,
-
-        colW / srcW,
-        cropH / srcH,
-
-        2.0,
-        0.68
-      );
-
-    columns.push(
-      column
-    );
-  }
-
-
-  return columns;
-}
-
-
-/* =========================
-   Detect total
-========================= */
-
-async function detectSheetTotal() {
-
-  /*
-   * อ่านเฉพาะส่วนหัว
-   * เพื่อหา "จำนวน 82 ชิ้น"
-   */
-
-  const head =
-    await cropImage(
-      originalDataUrl,
-
-      0.03,
-      0.00,
-      0.94,
-      0.31,
-
-      1.5,
-      0.70
-    );
-
-
-  const controller =
-    new AbortController();
-
-  const timer =
-    setTimeout(
-      () => controller.abort(),
-      30000
-    );
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/extract",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              image:
-                head.image,
-
-              mediaType:
-                head.mediaType,
-
-              mode:
-                "detect_total"
-            }),
-
-          signal:
-            controller.signal
-        }
-      );
-
-
-    const raw =
-      await response.text();
-
-
-    let data;
-
-    try {
-
-      data =
-        JSON.parse(raw);
-
-    } catch {
-
-      throw new Error(
-        `Server ตอบกลับไม่ใช่ JSON (HTTP ${response.status})`
-      );
-    }
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        data.error ||
-        `ตรวจจำนวนรวมไม่สำเร็จ (HTTP ${response.status})`
-      );
-    }
-
-
-    const total =
-      Number(data.total);
-
-
-    if (
-      !Number.isInteger(total) ||
-      total < 1 ||
-      total > 100
-    ) {
-
-      throw new Error(
-        "อ่านจำนวนทั้งหมดในใบไม่สำเร็จ"
-      );
-    }
-
-
-    return total;
-
-  } finally {
-
-    clearTimeout(timer);
+  for(const m of matches){
+    const row = document.createElement('div');
+    row.className = 'result-row';
+
+    const badge = document.createElement('div');
+    badge.className = 'seq-badge';
+    badge.textContent = m.seq;
+    row.appendChild(badge);
+
+    const main = document.createElement('div');
+    main.className = 'result-main';
+
+    const trackEl = document.createElement('div');
+    trackEl.className = 'tracking-no';
+    trackEl.innerHTML = highlightMatch(m.tracking, q);
+    main.appendChild(trackEl);
+
+    const src = document.createElement('div');
+    src.className = 'result-src';
+    src.textContent = 'จาก ' + m.sheetName;
+    main.appendChild(src);
+
+    row.appendChild(main);
+    resultsEl.appendChild(row);
   }
 }
 
-
-/* =========================
-   Call column
-========================= */
-
-async function callColumn(
-  column,
-  columnIndex
-) {
-
-  const controller =
-    new AbortController();
-
-  const timer =
-    setTimeout(
-      () => controller.abort(),
-      35000
-    );
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/extract",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-
-              image:
-                column.image,
-
-              mediaType:
-                column.mediaType ||
-                "image/jpeg",
-
-              columnIndex,
-
-              sheetTotal:
-                Number(
-                  totalEl.textContent
-                )
-
-            }),
-
-          signal:
-            controller.signal
-        }
-      );
-
-
-    const raw =
-      await response.text();
-
-
-    let data;
-
-    try {
-
-      data =
-        JSON.parse(raw);
-
-    } catch {
-
-      throw new Error(
-        `Server ตอบกลับไม่ใช่ JSON (HTTP ${response.status})`
-      );
-    }
-
-
-    if (!response.ok) {
-
-      let detail = "";
-
-      if (data.details) {
-
-        detail =
-          `: ${data.details}`;
-      }
-
-      throw new Error(
-        (
-          data.error ||
-          `HTTP ${response.status}`
-        ) + detail
-      );
-    }
-
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      error.name ===
-      "AbortError"
-    ) {
-
-      throw new Error(
-        "หมดเวลา 35 วินาที"
-      );
-    }
-
-    throw error;
-
-  } finally {
-
-    clearTimeout(timer);
-  }
+function highlightMatch(tracking, query){
+  const idx = tracking.indexOf(query.toUpperCase());
+  if(idx === -1) return escapeHtml(tracking);
+  const before = tracking.slice(0, idx);
+  const match = tracking.slice(idx, idx + query.length);
+  const after = tracking.slice(idx + query.length);
+  return escapeHtml(before) + '<mark>' + escapeHtml(match) + '</mark>' + escapeHtml(after);
 }
 
-
-/* =========================
-   Expected sequences
-========================= */
-
-function expectedForColumn(
-  columnIndex,
-  total
-) {
-
-  const result = [];
-
-  for (
-    let seq = columnIndex + 1;
-    seq <= total;
-    seq += 4
-  ) {
-
-    result.push(seq);
-  }
-
-  return result;
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+searchInput.addEventListener('input', runSearch);
 
-/* =========================
-   Missing
-========================= */
-
-function missingForColumn(
-  items,
-  columnIndex,
-  total
-) {
-
-  const expected =
-    expectedForColumn(
-      columnIndex,
-      total
-    );
-
-  const got =
-    new Set(
-      normalizeItems(items)
-        .map(item => item.seq)
-    );
-
-
-  return expected.filter(
-    seq => !got.has(seq)
-  );
-}
-
-
-/* =========================
-   Read one column
-   IMPORTANT:
-   NEVER SKIP
-========================= */
-
-async function readOneColumnUntilComplete(
-  column,
-  columnIndex,
-  total
-) {
-
-  const expected =
-    expectedForColumn(
-      columnIndex,
-      total
-    );
-
-
-  let lastError =
-    "";
-
-
-  /*
-   * ถ้าไม่ครบ จะอยู่คอลัมน์เดิม
-   * ไม่ข้ามไปคอลัมน์ถัดไป
-   */
-
-  for (
-    let attempt = 1;
-    attempt <= 4;
-    attempt++
-  ) {
-
-    statusEl.textContent =
-      `กำลังอ่านคอลัมน์ ${columnIndex + 1}/4 ครั้งที่ ${attempt}/4`;
-
-
-    try {
-
-      const data =
-        await callColumn(
-          column,
-          columnIndex
-        );
-
-
-      const items =
-        normalizeItems(
-          data.items
-        );
-
-
-      const missing =
-        missingForColumn(
-          items,
-          columnIndex,
-          total
-        );
-
-
-      /*
-       * ครบแล้วเท่านั้น
-       * จึงถือว่าคอลัมน์สำเร็จ
-       */
-
-      if (
-        missing.length === 0
-      ) {
-
-        logEl.textContent +=
-          `คอลัมน์ ${columnIndex + 1}: สำเร็จ ${items.length}/${expected.length}\n`;
-
-        return items;
-      }
-
-
-      lastError =
-        `คอลัมน์ ${columnIndex + 1}: ได้ ${items.length}/${expected.length} รายการ — ขาด #${missing.join(", #")}`;
-
-
-      logEl.textContent +=
-        lastError + "\n";
-
-
-      /*
-       * ไม่ return
-       * ไม่ continue ไปคอลัมน์ถัดไป
-       *
-       * วนกลับมาอ่านคอลัมน์เดิม
-       */
-
-    } catch (error) {
-
-      lastError =
-        `คอลัมน์ ${columnIndex + 1}: ครั้งที่ ${attempt}/4 ERROR — ${error.message}`;
-
-
-      logEl.textContent +=
-        lastError + "\n";
-
-
-      /*
-       * Error ก็ยังอยู่คอลัมน์เดิม
-       */
-    }
-
-
-    /*
-     * เว้นนิดหนึ่งก่อน retry
-     */
-
-    if (attempt < 4) {
-
-      await new Promise(
-        resolve =>
-          setTimeout(
-            resolve,
-            1200
-          )
-      );
-    }
-  }
-
-
-  /*
-   * ครบ 4 ครั้งแล้วยังไม่ผ่าน
-   *
-   * หยุดทั้งงาน
-   * ห้ามข้าม
-   */
-
-  throw new Error(
-    lastError ||
-    `คอลัมน์ ${columnIndex + 1} ยังอ่านไม่ครบ`
-  );
-}
-
-
-/* =========================
-   MAIN
-========================= */
-
-readBtn.addEventListener(
-  "click",
-  async () => {
-
-    if (
-      busy ||
-      !originalDataUrl
-    ) {
-      return;
-    }
-
-
-    busy = true;
-
-    readBtn.disabled =
-      true;
-
-    clearBtn.disabled =
-      true;
-
-
-    all = [];
-
-    render();
-
-    setMessage(
-      "",
-      ""
-    );
-
-    logEl.textContent =
-      "";
-
-
-    try {
-
-      /* ---------------------
-         1. Detect total
-      --------------------- */
-
-      setProgress(
-        3,
-        "กำลังตรวจจำนวนทั้งหมดในใบ..."
-      );
-
-
-      let total = null;
-
-
-      /*
-       * จำนวนรวมสำคัญมาก
-       * ถ้าอ่านไม่ได้ ห้ามเดา
-       */
-
-      for (
-        let attempt = 1;
-        attempt <= 4 &&
-        total === null;
-        attempt++
-      ) {
-
-        try {
-
-          total =
-            await detectSheetTotal();
-
-        } catch (error) {
-
-          logEl.textContent +=
-            `ตรวจจำนวนรวม ครั้งที่ ${attempt}/4: ${error.message}\n`;
-
-
-          if (
-            attempt < 4
-          ) {
-
-            await new Promise(
-              resolve =>
-                setTimeout(
-                  resolve,
-                  1200
-                )
-            );
-          }
-        }
-      }
-
-
-      if (
-        total === null
-      ) {
-
-        throw new Error(
-          "ตรวจจำนวนทั้งหมดในใบไม่สำเร็จ จึงหยุดเพื่อป้องกันเลขหาย"
-        );
-      }
-
-
-      totalEl.textContent =
-        total;
-
-
-      setProgress(
-        8,
-        `พบจำนวนทั้งหมด ${total} รายการ กำลังเตรียมรูป...`
-      );
-
-
-      /* ---------------------
-         2. Make columns
-      --------------------- */
-
-      const columns =
-        await makeColumns();
-
-
-      /* ---------------------
-         3. Read 4 columns
-      --------------------- */
-
-      for (
-        let columnIndex = 0;
-        columnIndex < 4;
-        columnIndex++
-      ) {
-
-        /*
-         * ตรงนี้สำคัญมาก:
-         *
-         * ฟังก์ชันจะไม่จบ
-         * จนกว่าคอลัมน์นี้จะครบ
-         *
-         * ถ้า Error / ขาดเลข
-         * จะ retry คอลัมน์เดิม
-         */
-
-        const items =
-          await readOneColumnUntilComplete(
-            columns[columnIndex],
-            columnIndex,
-            total
-          );
-
-
-        /*
-         * เพิ่มข้อมูลของคอลัมน์
-         * หลังจากตรวจว่าครบแล้วเท่านั้น
-         */
-
-        mergeItems(items);
-
-
-        const progress =
-          10 +
-          ((columnIndex + 1) / 4) * 82;
-
-
-        setProgress(
-          progress,
-          `คอลัมน์ ${columnIndex + 1}/4 สำเร็จ — ได้ ${items.length} รายการ`
-        );
-      }
-
-
-      /* ---------------------
-         4. Final verification
-      --------------------- */
-
-      const expected =
-        Array.from(
-          {
-            length: total
-          },
-          (_, i) => i + 1
-        );
-
-
-      const got =
-        new Set(
-          all.map(
-            item => item.seq
-          )
-        );
-
-
-      const missing =
-        expected.filter(
-          seq => !got.has(seq)
-        );
-
-
-      /*
-       * ถ้ามีเลขหาย
-       * ห้ามบอกว่าสำเร็จ
-       */
-
-      if (
-        missing.length
-      ) {
-
-        throw new Error(
-          `ยังขาดลำดับ #${missing.join(", #")} — ระบบหยุดและไม่ข้าม`
-        );
-      }
-
-
-      /*
-       * ตรวจจำนวนสุดท้ายอีกชั้น
-       */
-
-      if (
-        all.length !== total
-      ) {
-
-        throw new Error(
-          `จำนวนไม่ตรง: ได้ ${all.length}/${total} รายการ`
-        );
-      }
-
-
-      setProgress(
-        100,
-        `อ่านครบ ${total}/${total} รายการแล้ว`
-      );
-
-
-      setMessage(
-        "ok",
-        `อ่านสำเร็จครบทุกเลข ${total}/${total} รายการ`
-      );
-
-
-    } catch (error) {
-
-      /*
-       * ไม่ข้าม
-       * ไม่แสดงว่าสำเร็จ
-       */
-
-      setMessage(
-        "err",
-        `หยุดการอ่าน: ${error.message}`
-      );
-
-
-      statusEl.textContent =
-        "ยังอ่านไม่ครบ — ไม่มีการข้ามคอลัมน์";
-
-
-    } finally {
-
-      busy = false;
-
-      readBtn.disabled =
-        !originalDataUrl;
-
-      clearBtn.disabled =
-        false;
-    }
-
-  }
-);
-
-
-/* =========================
-   Clear
-========================= */
-
-clearBtn.addEventListener(
-  "click",
-  () => {
-
-    busy = false;
-
-    originalDataUrl =
-      "";
-
-    all = [];
-
-    fileInput.value =
-      "";
-
-    preview.removeAttribute(
-      "src"
-    );
-
-    preview.style.display =
-      "none";
-
-    readBtn.disabled =
-      true;
-
-    totalEl.textContent =
-      "-";
-
-    setProgress(
-      0,
-      "กรุณาเลือกรูป"
-    );
-
-    setMessage(
-      "",
-      ""
-    );
-
-    searchInput.value =
-      "";
-
-    render();
-
-    logEl.textContent =
-      "";
-  }
-);
-
-
-/* Initial */
+restore();
 render();
-
 </script>
-
 </body>
 </html>
