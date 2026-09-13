@@ -1,321 +1,223 @@
-// Vercel Serverless Function — Google Gemini OCR backend
+// Vercel Serverless Function
 // POST /api/extract
 //
-// Request:
-// {
-//   image: "<base64 jpeg>",
-//   mediaType: "image/jpeg",
-//   columnIndex: 0
-// }
+// MODE 1:
+// detect_total
+// อ่านจำนวนทั้งหมดจากหัวใบ เช่น "จำนวน 82 ชิ้น"
 //
-// columnIndex:
-// 0 = column 1
-// 1 = column 2
-// 2 = column 3
-// 3 = column 4
+// MODE 2:
+// column
+// อ่านเลขพัสดุจาก 1 คอลัมน์
 //
-// Response:
-// {
-//   items: [
-//     { seq: 1, tracking: "WB368998512TH" }
-//   ]
-// }
+// Environment:
+// GEMINI_API_KEY
 //
-// อ่านทีละคอลัมน์
-// ไม่ retry
-// รองรับ sequence 1-100
+// Optional:
+// GEMINI_MODEL
+//
+// Default:
+// gemini-3.8-flash
+
 
 const MODEL =
-  process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  process.env.GEMINI_MODEL ||
+  "gemini-3.8-flash";
 
 
-// ======================================================
-// Expected sequence ของแต่ละคอลัมน์
-// ======================================================
+const MAX_TOTAL = 100;
 
-function getExpectedSequences(columnIndex) {
 
-  const column = Number(columnIndex);
+/* =========================
+   JSON response
+========================= */
 
-  const safeColumn =
-    Number.isInteger(column) && column >= 0 && column <= 3
-      ? column
-      : 0;
+function json(
+  res,
+  status,
+  data
+) {
 
-  const start = safeColumn + 1;
+  res
+    .status(status)
+    .setHeader(
+      "Content-Type",
+      "application/json; charset=utf-8"
+    );
 
-  const sequences = [];
+  return res.end(
+    JSON.stringify(data)
+  );
+}
 
-  for (let seq = start; seq <= 100; seq += 4) {
-    sequences.push(seq);
+
+/* =========================
+   Expected sequences
+========================= */
+
+function expectedSequences(
+  columnIndex,
+  total
+) {
+
+  const result = [];
+
+  for (
+    let seq = columnIndex + 1;
+    seq <= total;
+    seq += 4
+  ) {
+
+    result.push(seq);
   }
 
-  return sequences;
+  return result;
 }
 
 
-// ======================================================
-// Prompt
-// ======================================================
+/* =========================
+   Tracking normalize
+========================= */
 
-function buildExtractionPrompt(columnIndex) {
+function normalizeTracking(
+  value
+) {
 
-  const expected =
-    getExpectedSequences(columnIndex);
+  let s =
+    String(value || "")
+      .toUpperCase()
+      .replace(
+        /[^A-Z0-9]/g,
+        ""
+      );
 
-  return `
-You are a high-accuracy OCR engine for Thai postal delivery manifests
-(บัญชีนำจ่าย ป.303).
 
-You are receiving ONE cropped vertical column from a postal delivery sheet.
+  /*
+   * ถ้าไม่มี TH
+   * ลองเติม TH
+   */
 
-This image contains ONLY ONE COLUMN of the original sheet.
+  if (
+    /^[A-Z]{2}[0-9]{9}$/.test(s)
+  ) {
 
-Column number:
-${Number(columnIndex) + 1}
+    s += "TH";
+  }
 
-Expected sequence numbers for this column:
 
-${expected.join(', ')}
+  if (
+    !/^[A-Z]{2}[0-9]{9}TH$/.test(s)
+  ) {
 
-TASK:
+    return "";
+  }
 
-Read EVERY visible parcel row in this image from top to bottom.
 
-IMPORTANT RULES:
-
-1. Read every visible parcel row.
-2. Do not stop early.
-3. Do not skip visible rows.
-4. Do not merge two rows.
-5. Do not invent rows that are not visible.
-6. Preserve the printed sequence number.
-7. Use the expected sequence pattern to help identify the row.
-8. If a tracking number is difficult to read, inspect the characters carefully and make the best reading possible.
-9. Highlighted rows are valid and must be read.
-10. Ignore recipient names.
-11. Ignore addresses.
-12. Ignore phone numbers.
-13. Ignore dates.
-14. Ignore prices.
-15. Ignore status text.
-16. Ignore headers.
-17. Ignore other document numbers.
-
-TRACKING NUMBER FORMAT:
-
-Exactly:
-
-2 English letters
-+
-9 digits
-+
-TH
-
-Example:
-
-WB368998512TH
-JG067450412TH
-
-Printed tracking numbers may contain spaces:
-
-WB 3689 9851 2 TH
-
-Remove spaces and hyphens.
-
-Convert letters to uppercase.
-
-OUTPUT:
-
-Return exactly one line for every visible parcel:
-
-sequence|tracking_number
-
-Examples:
-
-1|WB368998512TH
-5|WB464939383TH
-9|WB462670430TH
-
-DO NOT output markdown.
-DO NOT output a code block.
-DO NOT output a header.
-DO NOT output explanations.
-DO NOT output comments.
-DO NOT output blank lines.
-
-ONLY output:
-
-sequence|tracking_number
-
-Before answering, carefully inspect the entire image from top to bottom.
-Completeness is more important than explanation.
-`;
+  return s;
 }
 
 
-// ======================================================
-// Clean text
-// ======================================================
+/* =========================
+   Clean Gemini text
+========================= */
 
-function cleanText(text) {
+function cleanText(
+  text
+) {
 
-  return String(text || '')
-    .replace(/\r/g, '')
-    .replace(/```(?:text|plaintext|txt)?/gi, '')
-    .replace(/```/g, '')
+  return String(text || "")
+    .replace(
+      /```(?:text|txt)?/gi,
+      ""
+    )
+    .replace(
+      /```/g,
+      ""
+    )
     .trim();
 }
 
 
-// ======================================================
-// Normalize tracking
-// ======================================================
+/* =========================
+   Parse column items
+========================= */
 
-function normalizeTracking(value) {
+function parseItems(
+  text,
+  columnIndex,
+  total
+) {
 
-  if (!value) {
-    return null;
-  }
-
-  const s =
-    String(value)
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '');
-
-  // Correct format
-  // XX123456789TH
-
-  let match =
-    s.match(/^([A-Z]{2})(\d{9})TH$/);
-
-  if (match) {
-
-    return (
-      match[1] +
-      match[2] +
-      'TH'
-    );
-  }
-
-
-  // Sometimes Gemini omits TH
-
-  match =
-    s.match(/^([A-Z]{2})(\d{9})$/);
-
-  if (match) {
-
-    return (
-      match[1] +
-      match[2] +
-      'TH'
-    );
-  }
-
-
-  return null;
-}
-
-
-// ======================================================
-// Parse Gemini output
-// ======================================================
-
-function parseItems(text, columnIndex) {
-
-  const cleaned =
-    cleanText(text);
-
-  const items = [];
-
-  if (!cleaned) {
-    return items;
-  }
-
-
-  const expectedSequences =
+  const expected =
     new Set(
-      getExpectedSequences(columnIndex)
+      expectedSequences(
+        columnIndex,
+        total
+      )
     );
 
 
-  const seenSeq =
-    new Set();
-
-  const seenTracking =
-    new Set();
+  const map =
+    new Map();
 
 
   const lines =
-    cleaned.split('\n');
+    cleanText(text)
+      .replace(/\r/g, "")
+      .split("\n")
+      .map(
+        line =>
+          line.trim()
+      )
+      .filter(Boolean);
 
 
-  for (const rawLine of lines) {
+  for (
+    const line of lines
+  ) {
 
-    const line =
-      rawLine.trim();
+    let match =
+      line.match(
+        /^\s*(\d{1,3})\s*\|\s*([A-Za-z0-9\s]+)\s*$/
+      );
 
-    if (!line) {
-      continue;
+
+    /*
+     * เผื่อ Gemini ใช้ :
+     * หรือ -
+     */
+
+    if (!match) {
+
+      match =
+        line.match(
+          /^\s*(\d{1,3})\s*[:\-]\s*([A-Za-z0-9\s]+)\s*$/
+        );
     }
 
 
-    // -----------------------------------------------
-    // ต้องมี |
-    // -----------------------------------------------
-
-    if (!line.includes('|')) {
+    if (!match) {
       continue;
     }
 
-
-    const parts =
-      line.split('|');
-
-
-    if (parts.length < 2) {
-      continue;
-    }
-
-
-    // -----------------------------------------------
-    // Sequence
-    // -----------------------------------------------
-
-    const seqText =
-      String(parts[0])
-        .replace(/[^0-9]/g, '');
 
     const seq =
-      parseInt(seqText, 10);
+      Number(match[1]);
 
+
+    /*
+     * รับเฉพาะเลขของคอลัมน์นี้
+     */
 
     if (
-      !Number.isInteger(seq) ||
-      seq < 1 ||
-      seq > 100
+      !expected.has(seq)
     ) {
       continue;
     }
 
 
-    // ต้องอยู่ในคอลัมน์นี้เท่านั้น
-
-    if (!expectedSequences.has(seq)) {
-      continue;
-    }
-
-
-    // -----------------------------------------------
-    // Tracking
-    // -----------------------------------------------
-
     const tracking =
       normalizeTracking(
-        parts
-          .slice(1)
-          .join('|')
+        match[2]
       );
 
 
@@ -324,65 +226,303 @@ function parseItems(text, columnIndex) {
     }
 
 
-    // -----------------------------------------------
-    // กัน sequence ซ้ำ
-    // -----------------------------------------------
-
-    if (seenSeq.has(seq)) {
-      continue;
-    }
-
-
-    // -----------------------------------------------
-    // กัน tracking ซ้ำ
-    // -----------------------------------------------
-
-    if (seenTracking.has(tracking)) {
-      continue;
-    }
-
-
-    seenSeq.add(seq);
-    seenTracking.add(tracking);
-
-
-    items.push({
+    map.set(
       seq,
-      tracking
-    });
+      {
+        seq,
+        tracking
+      }
+    );
   }
 
 
-  items.sort(
-    (a, b) => a.seq - b.seq
+  return [
+    ...map.values()
+  ].sort(
+    (a, b) =>
+      a.seq - b.seq
   );
-
-
-  return items;
 }
 
 
-// ======================================================
-// Main
-// ======================================================
+/* =========================
+   Parse total
+========================= */
 
-module.exports = async (req, res) => {
+function parseTotal(
+  text
+) {
 
-  // ====================================================
-  // POST only
-  // ====================================================
+  const t =
+    String(text || "")
+      .replace(
+        /\r/g,
+        " "
+      );
 
-  if (req.method !== 'POST') {
 
-    return res.status(405).json({
-      error: 'Method not allowed'
-    });
+  const patterns = [
+
+    /*
+     * จำนวน 82 ชิ้น
+     */
+
+    /จำนวน\s*(?:ทั้งหมด\s*)?(\d{1,3})\s*ชิ้น/i,
+
+
+    /*
+     * จำนวน NON-COD ทั้งหมด 82 ชิ้น
+     */
+
+    /NON[\s-]*COD\s*ทั้งหมด\s*(\d{1,3})\s*ชิ้น/i,
+
+
+    /*
+     * ทั้งหมด 82 ชิ้น
+     */
+
+    /ทั้งหมด\s*(\d{1,3})\s*ชิ้น/i,
+
+
+    /*
+     * 82 ชิ้น
+     */
+
+    /(\d{1,3})\s*ชิ้น/i,
+
+
+    /*
+     * TOTAL 82
+     */
+
+    /\b(?:TOTAL|COUNT)\s*[:=]?\s*(\d{1,3})\b/i
+  ];
+
+
+  for (
+    const regex of patterns
+  ) {
+
+    const match =
+      t.match(regex);
+
+
+    if (!match) {
+      continue;
+    }
+
+
+    const number =
+      Number(match[1]);
+
+
+    if (
+      Number.isInteger(number) &&
+      number >= 1 &&
+      number <= MAX_TOTAL
+    ) {
+
+      return number;
+    }
   }
 
 
-  // ====================================================
-  // API KEY
-  // ====================================================
+  return null;
+}
+
+
+/* =========================
+   Total prompt
+========================= */
+
+function buildTotalPrompt() {
+
+  return `
+You are reading the header of a Thai postal delivery manifest
+(บัญชีนำจ่าย ป.303).
+
+TASK:
+
+Find the TOTAL NUMBER OF PARCELS/ITEMS on this document.
+
+Look specifically for text such as:
+
+"จำนวน 82 ชิ้น"
+
+or
+
+"จำนวน NON-COD ทั้งหมด 82 ชิ้น"
+
+Return ONLY the integer.
+
+Examples:
+
+82
+
+Do not return explanation.
+Do not return words.
+Do not guess.
+
+If the total number is not visible, return:
+
+0
+`.trim();
+}
+
+
+/* =========================
+   Column prompt
+========================= */
+
+function buildColumnPrompt(
+  columnIndex,
+  total
+) {
+
+  const expected =
+    expectedSequences(
+      columnIndex,
+      total
+    );
+
+
+  return `
+You are a HIGH-ACCURACY OCR engine for a Thai postal delivery manifest
+(บัญชีนำจ่าย ป.303).
+
+This image contains ONE VERTICAL CROPPED COLUMN from the document.
+
+Total parcels on the complete sheet:
+${total}
+
+This is column:
+${columnIndex + 1} of 4
+
+The ONLY sequence numbers that belong to this column are:
+
+${expected.join(", ")}
+
+
+YOUR TASK:
+
+Read EVERY VISIBLE parcel row in this column.
+
+For every visible row, extract:
+
+sequence|tracking_number
+
+
+TRACKING NUMBER FORMAT:
+
+Exactly:
+2 English letters
++
+9 digits
++
+TH
+
+Example:
+
+WB487680177TH
+
+
+IMPORTANT RULES:
+
+1. Read the tracking number EXACTLY from the image.
+
+2. Do not invent any tracking number.
+
+3. Do not invent a sequence number.
+
+4. Do not omit a visible parcel row.
+
+5. Ignore names.
+
+6. Ignore addresses.
+
+7. Ignore status text.
+
+8. Ignore prices.
+
+9. Ignore other document numbers.
+
+10. Spaces inside a tracking number are formatting only.
+
+11. Return ONE LINE PER PARCEL.
+
+12. Use exactly this format:
+
+sequence|tracking_number
+
+Example:
+
+1|WB487680177TH
+5|JG123456789TH
+
+13. Return ONLY the lines.
+
+14. Do NOT use Markdown.
+
+15. Do NOT add explanations.
+
+16. The sequence numbers must come only from this column:
+
+${expected.join(", ")}
+
+17. If a row is actually visible, make every effort to read it.
+
+18. If a row is not visible, DO NOT invent it.
+`.trim();
+}
+
+
+/* =========================
+   Gemini text extraction
+========================= */
+
+function getGeminiText(
+  data
+) {
+
+  const parts =
+    data
+      ?.candidates
+      ?.[0]
+      ?.content
+      ?.parts;
+
+
+  if (
+    !Array.isArray(parts)
+  ) {
+
+    return "";
+  }
+
+
+  return parts
+    .map(
+      part =>
+        typeof part?.text === "string"
+          ? part.text
+          : ""
+    )
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+
+/* =========================
+   Call Gemini
+========================= */
+
+async function callGemini({
+  image,
+  mediaType,
+  prompt,
+  timeoutMs = 30000
+}) {
 
   const apiKey =
     process.env.GEMINI_API_KEY ||
@@ -391,208 +531,52 @@ module.exports = async (req, res) => {
 
   if (!apiKey) {
 
-    return res.status(500).json({
+    const error =
+      new Error(
+        "ไม่พบ GEMINI_API_KEY ใน Vercel"
+      );
 
-      error:
-        'ไม่พบ GEMINI_API_KEY หรือ GOOGLE_API_KEY ใน Vercel'
+    error.code =
+      "NO_KEY";
 
-    });
+    throw error;
   }
 
 
-  // ====================================================
-  // Request body
-  // ====================================================
-
-  let body = req.body;
-
-
-  if (typeof body === 'string') {
-
-    try {
-
-      body =
-        JSON.parse(body);
-
-    } catch (error) {
-
-      return res.status(400).json({
-
-        error:
-          'Request body ไม่ใช่ JSON ที่ถูกต้อง'
-
-      });
-    }
-  }
+  const url =
+    "https://generativelanguage.googleapis.com/" +
+    "v1beta/models/" +
+    encodeURIComponent(MODEL) +
+    ":generateContent";
 
 
-  if (!body || typeof body !== 'object') {
-
-    return res.status(400).json({
-
-      error:
-        'ไม่พบข้อมูล request'
-
-    });
-  }
+  const controller =
+    new AbortController();
 
 
-  // ====================================================
-  // Image
-  // ====================================================
-
-  const image =
-    body.image;
-
-
-  if (
-    !image ||
-    typeof image !== 'string'
-  ) {
-
-    return res.status(400).json({
-
-      error:
-        'ไม่พบรูปภาพสำหรับ OCR'
-
-    });
-  }
-
-
-  // ====================================================
-  // Media type
-  // ====================================================
-
-  let mediaType =
-    body.mediaType ||
-    'image/jpeg';
-
-
-  // ป้องกัน MIME แปลก ๆ
-
-  if (
-    mediaType !== 'image/jpeg' &&
-    mediaType !== 'image/png' &&
-    mediaType !== 'image/webp' &&
-    mediaType !== 'image/heic' &&
-    mediaType !== 'image/heif'
-  ) {
-
-    mediaType = 'image/jpeg';
-  }
-
-
-  // ====================================================
-  // Column index
-  // ====================================================
-
-  let columnIndex =
-    Number(body.columnIndex);
-
-
-  if (
-    !Number.isInteger(columnIndex) ||
-    columnIndex < 0 ||
-    columnIndex > 3
-  ) {
-
-    columnIndex = 0;
-  }
-
-
-  // ====================================================
-  // Expected sequences
-  // ====================================================
-
-  const expectedSequences =
-    getExpectedSequences(columnIndex);
-
-
-  console.log(
-    '======================================'
-  );
-
-  console.log(
-    'OCR COLUMN:',
-    columnIndex + 1
-  );
-
-  console.log(
-    'MODEL:',
-    MODEL
-  );
-
-  console.log(
-    'IMAGE SIZE:',
-    image.length
-  );
-
-  console.log(
-    'EXPECTED:',
-    expectedSequences.join(',')
-  );
-
-  console.log(
-    '======================================'
-  );
+  const timer =
+    setTimeout(
+      () =>
+        controller.abort(),
+      timeoutMs
+    );
 
 
   try {
 
-    // ==================================================
-    // Build prompt
-    // ==================================================
-
-    const prompt =
-      buildExtractionPrompt(
-        columnIndex
-      );
-
-
-    // ==================================================
-    // Gemini endpoint
-    // ==================================================
-
-    const url =
-      'https://generativelanguage.googleapis.com/v1beta/models/' +
-      encodeURIComponent(MODEL) +
-      ':generateContent';
-
-
-    // ==================================================
-    // Timeout 30 sec
-    // ==================================================
-
-    const controller =
-      new AbortController();
-
-
-    const timeout =
-      setTimeout(() => {
-
-        controller.abort();
-
-      }, 30000);
-
-
-    let response;
-
-
-    try {
-
-      response =
-        await fetch(url, {
-
-          method: 'POST',
+    const response =
+      await fetch(
+        url,
+        {
+          method: "POST",
 
           headers: {
 
-            'Content-Type':
-              'application/json',
+            "Content-Type":
+              "application/json",
 
-            'x-goog-api-key':
+            "x-goog-api-key":
               apiKey
-
           },
 
 
@@ -606,18 +590,22 @@ module.exports = async (req, res) => {
                   parts: [
 
                     {
+
                       inline_data: {
 
                         mime_type:
-                          mediaType,
+                          mediaType ||
+                          "image/jpeg",
 
                         data:
                           image
-
                       }
+
                     },
 
+
                     {
+
                       text:
                         prompt
                     }
@@ -629,14 +617,18 @@ module.exports = async (req, res) => {
               ],
 
 
-              // ตั้งใจไม่ใส่ temperature
-              // และไม่ใส่ thinkingConfig
-              // เพื่อให้เข้ากับ Gemini API ได้กว้างขึ้น
+              /*
+               * ไม่ใส่ temperature
+               * ไม่ใส่ thinkingConfig
+               *
+               * เพื่อให้เข้ากันได้กับ
+               * Gemini 3.8 Flash
+               */
 
               generationConfig: {
 
-                maxOutputTokens: 3000
-
+                maxOutputTokens:
+                  3000
               }
 
             }),
@@ -644,151 +636,13 @@ module.exports = async (req, res) => {
 
           signal:
             controller.signal
-
-        });
-
-
-    } finally {
-
-      clearTimeout(timeout);
-    }
-
-
-    // ==================================================
-    // Read Gemini response
-    // ==================================================
-
-    const responseText =
-      await response.text();
-
-
-    console.log(
-      'Gemini HTTP status:',
-      response.status
-    );
-
-
-    // ==================================================
-    // Gemini error
-    // ==================================================
-
-    if (!response.ok) {
-
-      console.error(
-        'Gemini API ERROR:',
-        response.status,
-        responseText
+        }
       );
 
 
-      // -----------------------------------------------
-      // 400
-      // -----------------------------------------------
+    const raw =
+      await response.text();
 
-      if (response.status === 400) {
-
-        return res.status(400).json({
-
-          error:
-            'Gemini ปฏิเสธคำขอ (HTTP 400)',
-
-          details:
-            responseText.slice(0, 1000)
-
-        });
-      }
-
-
-      // -----------------------------------------------
-      // 401 / 403
-      // -----------------------------------------------
-
-      if (
-        response.status === 401 ||
-        response.status === 403
-      ) {
-
-        return res.status(response.status).json({
-
-          error:
-            'Gemini API Key ใช้งานไม่ได้หรือไม่มีสิทธิ์',
-
-          details:
-            responseText.slice(0, 1000)
-
-        });
-      }
-
-
-      // -----------------------------------------------
-      // 404
-      // -----------------------------------------------
-
-      if (response.status === 404) {
-
-        return res.status(404).json({
-
-          error:
-            'ไม่พบ Gemini model: ' + MODEL,
-
-          details:
-            responseText.slice(0, 1000)
-
-        });
-      }
-
-
-      // -----------------------------------------------
-      // 413
-      // -----------------------------------------------
-
-      if (response.status === 413) {
-
-        return res.status(413).json({
-
-          error:
-            'รูปภาพคอลัมน์ใหญ่เกินไป (HTTP 413)'
-
-        });
-      }
-
-
-      // -----------------------------------------------
-      // 429
-      // -----------------------------------------------
-
-      if (response.status === 429) {
-
-        return res.status(429).json({
-
-          error:
-            'Gemini จำกัดจำนวนคำขอชั่วคราว (HTTP 429)'
-
-        });
-      }
-
-
-      // -----------------------------------------------
-      // Other
-      // -----------------------------------------------
-
-      return res.status(response.status).json({
-
-        error:
-          'Gemini API error (' +
-          response.status +
-          ')',
-
-        details:
-          responseText.slice(0, 1000)
-
-      });
-    }
-
-
-    // ==================================================
-    // Parse JSON
-    // ==================================================
 
     let data;
 
@@ -796,175 +650,554 @@ module.exports = async (req, res) => {
     try {
 
       data =
-        JSON.parse(responseText);
+        JSON.parse(raw);
+
+    } catch {
+
+      const error =
+        new Error(
+          `Gemini ตอบกลับไม่ใช่ JSON (HTTP ${response.status})`
+        );
+
+      error.httpStatus =
+        response.status;
+
+      error.details =
+        raw.slice(0, 1500);
+
+      throw error;
+    }
+
+
+    if (!response.ok) {
+
+      const message =
+        data
+          ?.error
+          ?.message ||
+        data
+          ?.error
+          ?.status ||
+        `Gemini HTTP ${response.status}`;
+
+
+      const error =
+        new Error(message);
+
+
+      error.httpStatus =
+        response.status;
+
+      error.details =
+        data;
+
+
+      throw error;
+    }
+
+
+    return data;
+
+
+  } finally {
+
+    clearTimeout(timer);
+  }
+}
+
+
+/* =========================
+   MAIN HANDLER
+========================= */
+
+module.exports =
+  async function handler(
+    req,
+    res
+  ) {
+
+
+    /*
+     * POST only
+     */
+
+    if (
+      req.method !== "POST"
+    ) {
+
+      return json(
+        res,
+        405,
+        {
+          error:
+            "Method not allowed"
+        }
+      );
+    }
+
+
+    try {
+
+      let body =
+        req.body;
+
+
+      /*
+       * Vercel บางกรณีส่ง string
+       */
+
+      if (
+        typeof body === "string"
+      ) {
+
+        try {
+
+          body =
+            JSON.parse(body);
+
+        } catch {
+
+          return json(
+            res,
+            400,
+            {
+              error:
+                "Request body ไม่ใช่ JSON"
+            }
+          );
+        }
+      }
+
+
+      body =
+        body || {};
+
+
+      const mode =
+        body.mode ||
+        "column";
+
+
+      const image =
+        body.image;
+
+
+      const mediaType =
+        body.mediaType ||
+        "image/jpeg";
+
+
+      if (
+        !image ||
+        typeof image !== "string"
+      ) {
+
+        return json(
+          res,
+          400,
+          {
+            error:
+              "ไม่พบ image ใน request"
+          }
+        );
+      }
+
+
+      /* ==================================================
+         MODE 1
+         DETECT TOTAL
+      ================================================== */
+
+      if (
+        mode ===
+        "detect_total"
+      ) {
+
+        const data =
+          await callGemini({
+
+            image,
+
+            mediaType,
+
+            prompt:
+              buildTotalPrompt(),
+
+            timeoutMs:
+              30000
+          });
+
+
+        const text =
+          getGeminiText(data);
+
+
+        let total =
+          parseTotal(text);
+
+
+        /*
+         * กรณี Gemini ตอบแค่:
+         *
+         * 82
+         */
+
+        if (!total) {
+
+          const match =
+            text.match(
+              /\b([1-9]\d?|100)\b/
+            );
+
+
+          if (match) {
+
+            total =
+              Number(match[1]);
+          }
+        }
+
+
+        if (
+          !total
+        ) {
+
+          return json(
+            res,
+            422,
+            {
+              error:
+                "อ่านจำนวนทั้งหมดจากหัวใบไม่สำเร็จ",
+
+              raw:
+                text.slice(
+                  0,
+                  500
+                )
+            }
+          );
+        }
+
+
+        console.log(
+          `[extract] total=${total}`
+        );
+
+
+        return json(
+          res,
+          200,
+          {
+            total
+          }
+        );
+      }
+
+
+      /* ==================================================
+         MODE 2
+         COLUMN
+      ================================================== */
+
+      const columnIndex =
+        Number(
+          body.columnIndex
+        );
+
+
+      const sheetTotal =
+        Number(
+          body.sheetTotal
+        );
+
+
+      if (
+        !Number.isInteger(
+          columnIndex
+        ) ||
+        columnIndex < 0 ||
+        columnIndex > 3
+      ) {
+
+        return json(
+          res,
+          400,
+          {
+            error:
+              "columnIndex ต้องเป็น 0, 1, 2 หรือ 3"
+          }
+        );
+      }
+
+
+      if (
+        !Number.isInteger(
+          sheetTotal
+        ) ||
+        sheetTotal < 1 ||
+        sheetTotal > MAX_TOTAL
+      ) {
+
+        return json(
+          res,
+          400,
+          {
+            error:
+              "sheetTotal ไม่ถูกต้อง"
+          }
+        );
+      }
+
+
+      const expected =
+        expectedSequences(
+          columnIndex,
+          sheetTotal
+        );
+
+
+      console.log(
+        `[extract] ` +
+        `model=${MODEL} ` +
+        `column=${columnIndex + 1}/4 ` +
+        `total=${sheetTotal} ` +
+        `expected=${expected.join(",")} ` +
+        `imageChars=${image.length}`
+      );
+
+
+      const data =
+        await callGemini({
+
+          image,
+
+          mediaType,
+
+          prompt:
+            buildColumnPrompt(
+              columnIndex,
+              sheetTotal
+            ),
+
+          timeoutMs:
+            30000
+        });
+
+
+      const text =
+        getGeminiText(data);
+
+
+      const items =
+        parseItems(
+          text,
+          columnIndex,
+          sheetTotal
+        );
+
+
+      const got =
+        new Set(
+          items.map(
+            item =>
+              item.seq
+          )
+        );
+
+
+      const missing =
+        expected.filter(
+          seq =>
+            !got.has(seq)
+        );
+
+
+      console.log(
+        `[extract] ` +
+        `column=${columnIndex + 1} ` +
+        `got=${items.length}/${expected.length} ` +
+        `missing=${missing.join(",") || "none"}`
+      );
+
+
+      console.log(
+        `[extract] raw=` +
+        text.slice(
+          0,
+          2000
+        )
+      );
+
+
+      /*
+       * คืน complete ให้ frontend
+       *
+       * frontend จะเป็นคนตัดสินใจว่า
+       * คอลัมน์ผ่านหรือไม่
+       */
+
+      return json(
+        res,
+        200,
+        {
+
+          items,
+
+          columnIndex,
+
+          sheetTotal,
+
+          expectedCount:
+            expected.length,
+
+          gotCount:
+            items.length,
+
+          missing,
+
+          complete:
+            missing.length === 0
+
+        }
+      );
+
 
     } catch (error) {
 
       console.error(
-        'Gemini returned invalid JSON:',
-        responseText
+        "[extract] error:",
+        error
       );
 
 
-      return res.status(502).json({
+      /*
+       * Timeout
+       */
 
-        error:
-          'Gemini ตอบกลับข้อมูลไม่ถูกต้อง',
+      if (
+        error.name ===
+        "AbortError"
+      ) {
 
-        details:
-          responseText.slice(0, 1000)
+        return json(
+          res,
+          504,
+          {
+            error:
+              "Gemini ใช้เวลานานเกินไป",
 
-      });
-    }
+            details:
+              "timeout"
+          }
+        );
+      }
 
 
-    // ==================================================
-    // Candidate
-    // ==================================================
+      /*
+       * API key
+       */
 
-    const candidate =
-      data?.candidates?.[0];
+      if (
+        error.code ===
+        "NO_KEY"
+      ) {
+
+        return json(
+          res,
+          500,
+          {
+            error:
+              error.message
+          }
+        );
+      }
 
 
-    if (!candidate) {
+      const status =
+        Number(
+          error.httpStatus
+        ) || 500;
 
-      console.error(
-        'No Gemini candidate:',
-        JSON.stringify(data).slice(0, 3000)
+
+      let message =
+        error.message ||
+        "Server error";
+
+
+      /*
+       * Rate limit
+       */
+
+      if (
+        status === 429
+      ) {
+
+        message =
+          "Gemini จำกัดการใช้งานชั่วคราว (429)";
+      }
+
+
+      /*
+       * Request ใหญ่เกิน
+       */
+
+      else if (
+        status === 413
+      ) {
+
+        message =
+          "รูปใหญ่เกินไป (413)";
+      }
+
+
+      /*
+       * Key ผิด
+       */
+
+      else if (
+        status === 401 ||
+        status === 403
+      ) {
+
+        message =
+          "GEMINI_API_KEY ไม่ถูกต้องหรือไม่มีสิทธิ์ใช้งาน";
+      }
+
+
+      /*
+       * Model ไม่พบ
+       */
+
+      else if (
+        status === 404
+      ) {
+
+        message =
+          `ไม่พบ Gemini model: ${MODEL}`;
+      }
+
+
+      return json(
+        res,
+        status >= 400 &&
+        status < 600
+          ? status
+          : 500,
+        {
+
+          error:
+            message,
+
+          details:
+            typeof error.details ===
+            "string"
+              ? error.details.slice(
+                  0,
+                  1500
+                )
+              : undefined
+
+        }
       );
-
-
-      return res.status(502).json({
-
-        error:
-          'Gemini ไม่ส่งผล OCR กลับมา',
-
-        details:
-          JSON.stringify(data).slice(0, 1000)
-
-      });
     }
-
-
-    // ==================================================
-    // Get text
-    // ==================================================
-
-    const outputParts =
-      candidate?.content?.parts || [];
-
-
-    const text =
-      outputParts
-        .map(part => part?.text || '')
-        .join('\n')
-        .trim();
-
-
-    console.log(
-      'Gemini output length:',
-      text.length
-    );
-
-
-    console.log(
-      'Gemini raw output:',
-      text.slice(0, 5000)
-    );
-
-
-    // ==================================================
-    // Parse OCR
-    // ==================================================
-
-    const items =
-      parseItems(
-        text,
-        columnIndex
-      );
-
-
-    console.log(
-      'Parsed items:',
-      items.length
-    );
-
-
-    console.log(
-      'Parsed:',
-      JSON.stringify(items)
-    );
-
-
-    // ==================================================
-    // Success but no result
-    // ==================================================
-
-    if (items.length === 0) {
-
-      return res.status(200).json({
-
-        items: [],
-
-        columnIndex,
-
-        warning:
-          'Gemini ไม่พบเลขพัสดุที่อ่านได้ในคอลัมน์นี้'
-
-      });
-    }
-
-
-    // ==================================================
-    // Success
-    // ==================================================
-
-    return res.status(200).json({
-
-      items,
-
-      columnIndex
-
-    });
-
-
-  } catch (error) {
-
-    console.error(
-      'extract.js ERROR:',
-      error
-    );
-
-
-    // ==================================================
-    // Timeout
-    // ==================================================
-
-    if (
-      error &&
-      error.name === 'AbortError'
-    ) {
-
-      return res.status(504).json({
-
-        error:
-          'OCR คอลัมน์นี้ใช้เวลานานเกิน 30 วินาที'
-
-      });
-    }
-
-
-    // ==================================================
-    // Other error
-    // ==================================================
-
-    return res.status(500).json({
-
-      error:
-        error?.message ||
-        'OCR processing failed'
-
-    });
-  }
-
-};
+  };
