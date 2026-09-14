@@ -178,6 +178,34 @@
     color:var(--muted); font-size:14px; padding:18px 4px;
   }
 
+  /* ---------- instant result visibility ---------- */
+  .results{
+    scroll-margin-top:24px;
+  }
+  .result-row{
+    box-shadow:0 2px 10px rgba(18,41,26,.06);
+  }
+  .result-row:first-child{
+    border-width:2px;
+  }
+  .result-row:first-child .seq-badge{
+    min-width:52px;
+    height:52px;
+    font-size:21px;
+  }
+  .result-row:first-child .result-main{
+    padding:2px 0;
+  }
+  .result-row:first-child .tracking-no{
+    font-size:20px;
+  }
+
+  /* On smaller screens, keep the search field and its answer easy to reach. */
+  @media (max-width:720px){
+    .wrap{ padding-bottom:40px; }
+    .results{ scroll-margin-top:12px; }
+  }
+
   footer{
     margin-top:46px; padding-top:16px; border-top:1px solid var(--line);
     display:flex; justify-content:space-between; color:var(--muted);
@@ -470,15 +498,29 @@ dropzone.addEventListener('drop', (e) => {
   if(e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files);
 });
 
+function isElementInViewport(el){
+  if(!el) return false;
+  const r = el.getBoundingClientRect();
+  const topSafe = 16;
+  const bottomSafe = window.innerHeight - 16;
+  return r.top >= topSafe && r.bottom <= bottomSafe;
+}
+
+let lastSearchHadMatch = false;
+
 function runSearch(){
   const q = digitsOnly(searchInput.value.trim());
   resultsEl.innerHTML = '';
-  if(!q){ return; }
+  if(!q){
+    lastSearchHadMatch = false;
+    return;
+  }
 
   const items = allItems();
   const matches = items.filter(it => digitsOnly(it.tracking).includes(q) || it.tracking.includes(q.toUpperCase()));
 
   if(matches.length === 0){
+    lastSearchHadMatch = false;
     const div = document.createElement('div');
     div.className = 'no-results';
     div.textContent = 'ไม่พบเลขพัสดุที่ตรงกับ "' + searchInput.value.trim() + '"';
@@ -511,6 +553,19 @@ function runSearch(){
     row.appendChild(main);
     resultsEl.appendChild(row);
   }
+
+  /* 
+     หลังพิมพ์ค้นหา ถ้าคำตอบยังอยู่นอกจอ ให้เลื่อนลงให้อัตโนมัติ
+     เพื่อให้ "ลำดับพัสดุ" เห็นทันที ไม่ต้องลากหน้าจอเอง
+  */
+  const firstResult = resultsEl.querySelector('.result-row');
+  if(firstResult && !isElementInViewport(firstResult)){
+    requestAnimationFrame(() => {
+      firstResult.scrollIntoView({ behavior:'smooth', block:'center' });
+    });
+  }
+
+  lastSearchHadMatch = true;
 }
 
 function highlightMatch(tracking, query){
