@@ -518,6 +518,59 @@ function isElementInViewport(el){
   return r.top >= topSafe && r.bottom <= bottomSafe;
 }
 
+/*
+   iPhone/iPad: ตอนแป้นพิมพ์เปิด visual viewport จะเตี้ยลง
+   แต่ layout viewport ของหน้าเว็บยังเหมือนเดิม ทำให้ช่องค้นหา/ผลลัพธ์
+   อาจถูกแป้นพิมพ์บังได้ จึงเลื่อนหน้าตาม visual viewport โดยตรง
+*/
+function isKeyboardVisible(){
+  const vv = window.visualViewport;
+  if(!vv) return false;
+  return (window.innerHeight - vv.height) > 120;
+}
+
+function keepSearchContentAboveKeyboard(){
+  const vv = window.visualViewport;
+  if(!vv || !isKeyboardVisible()) return;
+
+  const visibleTop = vv.offsetTop + 12;
+  const visibleBottom = vv.offsetTop + vv.height - 12;
+  const firstResult = resultsEl.querySelector('.result-row');
+
+  // ถ้ามีผลลัพธ์ ให้เอาผลลัพธ์แรกขึ้นมาอยู่เหนือแป้นพิมพ์
+  // จะได้เห็นลำดับและเลขพัสดุทันที
+  if(firstResult){
+    const r = firstResult.getBoundingClientRect();
+    if(r.top < visibleTop || r.bottom > visibleBottom){
+      const targetTop = visibleTop + 8;
+      window.scrollBy({ top: r.top - targetTop, left: 0, behavior: 'auto' });
+    }
+    return;
+  }
+
+  // ถ้ายังไม่มีผลลัพธ์ ให้แน่ใจว่าช่องค้นหาไม่ถูกแป้นพิมพ์บัง
+  const inputRect = searchInput.getBoundingClientRect();
+  if(inputRect.bottom > visibleBottom){
+    window.scrollBy({
+      top: inputRect.bottom - visibleBottom + 12,
+      left: 0,
+      behavior: 'auto'
+    });
+  }else if(inputRect.top < visibleTop){
+    window.scrollBy({
+      top: inputRect.top - visibleTop,
+      left: 0,
+      behavior: 'auto'
+    });
+  }
+}
+
+function scheduleKeyboardSafeScroll(){
+  requestAnimationFrame(() => {
+    requestAnimationFrame(keepSearchContentAboveKeyboard);
+  });
+}
+
 let lastSearchHadMatch = false;
 
 function runSearch(){
@@ -568,15 +621,19 @@ function runSearch(){
     resultsEl.appendChild(row);
   }
 
-  /* 
-     หลังพิมพ์ค้นหา ถ้าคำตอบยังอยู่นอกจอ ให้เลื่อนลงให้อัตโนมัติ
-     เพื่อให้ "ลำดับพัสดุ" เห็นทันที ไม่ต้องลากหน้าจอเอง
+  /*
+     บนมือถือ ถ้าแป้นพิมพ์เปิดอยู่ ห้ามใช้ scrollIntoView แบบเดิม
+     เพราะ iOS อาจคำนวณจาก layout viewport แล้ววางผลลัพธ์ไว้ใต้คีย์บอร์ด
+     ให้เลื่อนตาม visual viewport แทน
   */
-  const firstResult = resultsEl.querySelector('.result-row');
-  if(firstResult && !isElementInViewport(firstResult)){
-    requestAnimationFrame(() => {
-      firstResult.scrollIntoView({ behavior:'smooth', block:'center' });
-    });
+  if(isKeyboardVisible()) scheduleKeyboardSafeScroll();
+  else {
+    const firstResult = resultsEl.querySelector('.result-row');
+    if(firstResult && !isElementInViewport(firstResult)){
+      requestAnimationFrame(() => {
+        firstResult.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    }
   }
 
   lastSearchHadMatch = true;
@@ -595,7 +652,16 @@ function escapeHtml(s){
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-searchInput.addEventListener('input', runSearch);
+searchInput.addEventListener('input', () => {
+  runSearch();
+  scheduleKeyboardSafeScroll();
+});
+
+searchInput.addEventListener('focus', scheduleKeyboardSafeScroll);
+
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', scheduleKeyboardSafeScroll);
+}
 
 clearSearch.addEventListener('click', (e) => {
   e.preventDefault();
