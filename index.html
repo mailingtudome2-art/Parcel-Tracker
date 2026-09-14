@@ -138,7 +138,7 @@
   .search-box{ position:relative; }
   .search-box input{
     width:100%; background:var(--panel-2); border:1.5px solid var(--line);
-    color:var(--ink); border-radius:10px; padding:16px 16px 16px 46px;
+    color:var(--ink); border-radius:10px; padding:16px 48px 16px 46px;
     font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.03em;
   }
   .search-box input::placeholder{ color:var(--muted); font-family:'Inter',sans-serif; letter-spacing:normal;}
@@ -146,6 +146,16 @@
     position:absolute; left:16px; top:50%; transform:translateY(-50%);
     color:var(--muted); font-size:16px; pointer-events:none;
   }
+  .clear-search{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border:0; border-radius:7px;
+    background:transparent; color:var(--muted); cursor:pointer;
+    font-size:22px; line-height:1; display:none;
+    align-items:center; justify-content:center;
+  }
+  .clear-search:hover{ background:var(--line); color:var(--ink); }
+  .clear-search.show{ display:flex; }
+  .search-box input::-webkit-search-cancel-button{ display:none; }
 
   .empty-hint{ color:var(--muted); font-size:13px; margin-top:10px; }
 
@@ -252,6 +262,7 @@
     <div class="search-box">
       <span class="glyph">#</span>
       <input type="text" id="searchInput" placeholder="พิมพ์ตัวเลขบางส่วน เช่น 5193 หรือ 0161" inputmode="numeric" autocomplete="off">
+      <button type="button" id="clearSearch" class="clear-search" aria-label="ล้างช่องค้นหา" title="ล้างช่องค้นหา">×</button>
     </div>
     <div id="emptyHint" class="empty-hint">ยังไม่มีข้อมูล — อัปโหลดใบนำจ่ายด้านบนก่อน</div>
     <div class="results" id="results"></div>
@@ -274,6 +285,7 @@ const itemCount = document.getElementById('itemCount');
 const resultsEl = document.getElementById('results');
 const emptyHint = document.getElementById('emptyHint');
 const searchInput = document.getElementById('searchInput');
+const clearSearch = document.getElementById('clearSearch');
 const footerLeft = document.getElementById('footerLeft');
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
@@ -509,7 +521,9 @@ function isElementInViewport(el){
 let lastSearchHadMatch = false;
 
 function runSearch(){
-  const q = digitsOnly(searchInput.value.trim());
+  const rawQuery = searchInput.value.trim();
+  const q = digitsOnly(rawQuery);
+  clearSearch.classList.toggle('show', rawQuery.length > 0);
   resultsEl.innerHTML = '';
   if(!q){
     lastSearchHadMatch = false;
