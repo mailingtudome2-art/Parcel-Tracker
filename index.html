@@ -212,8 +212,16 @@
 
   /* On smaller screens, keep the search field and its answer easy to reach. */
   @media (max-width:720px){
-    .wrap{ padding-bottom:40px; }
-    .results{ scroll-margin-top:12px; }
+    /* มือถือ: ลดพื้นที่ส่วนหัวที่ไม่จำเป็น เพื่อให้ช่องค้นหาและผลลัพธ์อยู่สูงขึ้น */
+    .wrap{ padding:12px 14px 40px; }
+    header{ padding-bottom:6px; }
+    .eyebrow{ margin-bottom:4px; }
+    h1{ font-size:30px; line-height:1; }
+    .sub{ margin-top:6px; font-size:13px; line-height:1.35; }
+    .barcode{ height:8px; margin-top:10px; }
+    section{ margin-top:20px; }
+    .label-row{ margin-bottom:8px; }
+    .results{ scroll-margin-top:8px; }
   }
 
   footer{
