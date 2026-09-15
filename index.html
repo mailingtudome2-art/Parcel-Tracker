@@ -79,7 +79,7 @@
   .dropzone{
     border:1.5px dashed var(--line);
     border-radius:10px;
-    padding:26px 20px;
+    padding:18px 16px;
     text-align:center;
     background:var(--panel);
     cursor:pointer;
@@ -94,10 +94,10 @@
     overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
   }
   .dropzone{ user-select:none; }
-  .dz-title{ font-weight:600; font-size:15px; }
-  .dz-sub{ color:var(--muted); font-size:13px; margin-top:4px; }
+  .dz-title{ font-weight:600; font-size:14px; }
+  .dz-sub{ color:var(--muted); font-size:12px; margin-top:3px; }
   .dz-icon{
-    width:34px;height:34px;margin:0 auto 10px;
+    width:30px;height:30px;margin:0 auto 7px;
     border:1.5px solid var(--muted); border-radius:7px;
     display:flex;align-items:center;justify-content:center;
     color:var(--muted); font-size:18px;
@@ -219,10 +219,13 @@
     header{ padding-bottom:6px; }
     .eyebrow{ margin-bottom:4px; }
     h1{ font-size:30px; line-height:1; }
-    .sub{ margin-top:6px; font-size:13px; line-height:1.35; }
-    .barcode{ height:8px; margin-top:10px; }
+    .barcode{ height:7px; margin-top:9px; }
     section{ margin-top:20px; }
-    .label-row{ margin-bottom:8px; }
+    .label-row{ margin-bottom:7px; }
+    .dropzone{ padding:14px 12px; }
+    .dz-title{ font-size:13.5px; }
+    .dz-sub{ font-size:11.5px; }
+    .dz-icon{ width:28px; height:28px; margin-bottom:6px; font-size:16px; }
     .results{ scroll-margin-top:8px; }
   }
 
@@ -243,7 +246,6 @@
   <header>
     <p class="eyebrow">บัญชีนำจ่าย · ป.303</p>
     <h1>ป<span class="doc">.303</span> SCANNER</h1>
-    <p class="sub">อัปโหลดรูปใบนำจ่าย แล้วพิมพ์เลขพัสดุบางส่วนเพื่อหาลำดับที่ในใบ — ไม่ต้องไล่ตาทีละบรรทัด</p>
     <div class="barcode"></div>
   </header>
 
