@@ -146,13 +146,16 @@
   .search-box input::placeholder{ color:var(--muted); font-family:'Inter',sans-serif; letter-spacing:normal;}
   .clear-search{
     position:absolute; right:10px; top:50%; transform:translateY(-50%);
-    width:34px; height:34px; border:0; border-radius:7px;
-    background:transparent; color:var(--muted); cursor:pointer;
-    font-size:24px; line-height:1; display:none;
+    width:38px; height:38px; border:0; border-radius:50%;
+    background:#dc2626; color:#fff; cursor:pointer;
+    font-size:25px; font-weight:700; line-height:1; display:none;
     align-items:center; justify-content:center;
-    padding:0; font-family:Arial,sans-serif;
+    padding:0 0 2px; font-family:Arial,sans-serif;
+    box-shadow:0 2px 7px rgba(220,38,38,.28);
+    -webkit-tap-highlight-color:transparent;
   }
-  .clear-search:hover{ background:var(--line); color:var(--ink); }
+  .clear-search:hover{ background:#b91c1c; color:#fff; }
+  .clear-search:active{ transform:translateY(-50%) scale(.92); }
   .clear-search.show{ display:flex; }
   .search-box .glyph{
     position:absolute; left:16px; top:50%; transform:translateY(-50%);
